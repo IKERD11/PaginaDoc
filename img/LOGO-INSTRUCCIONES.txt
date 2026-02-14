@@ -1,0 +1,15 @@
+INSTRUCCIONES PARA AGREGAR EL LOGO
+===================================
+
+Por favor, guarda la imagen del logo del Instituto Tecnológico de Cuautla 
+(el águila estilizada en amarillo y verde) con el siguiente nombre:
+
+    logo-tec.png
+
+en esta misma carpeta (img/).
+
+El logo se mostrará en el círculo de la pantalla de login, reemplazando 
+el icono del sombrero de graduación.
+
+Formato recomendado: PNG con fondo transparente
+Tamaño recomendado: 300x300 px o superior
