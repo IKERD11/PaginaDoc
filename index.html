@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión Documental Escolar</title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+    <link rel="icon" type="image/x-icon"
+        href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body class="login-page">
     <!-- Formas decorativas animadas en el fondo -->
     <div class="background-shapes">
@@ -15,7 +18,7 @@
         <div class="shape shape-2"></div>
         <div class="shape shape-3"></div>
     </div>
-    
+
     <div class="login-container">
         <div class="login-box">
             <div class="login-header">
@@ -25,39 +28,26 @@
                 <h1>Bienvenido</h1>
                 <p>Ingresa tu email y contraseña para continuar</p>
             </div>
-            
+
             <form id="loginForm" class="login-form">
                 <div class="input-group">
                     <div class="input-icon">
                         <i class="fas fa-envelope"></i>
                     </div>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="Correo Electrónico"
-                        inputmode="email"
-                        required
-                        autocomplete="off"
-                    >
+                    <input type="email" id="email" name="email" placeholder="Correo Electrónico" inputmode="email"
+                        required autocomplete="off">
                 </div>
-                
+
                 <div class="input-group">
                     <div class="input-icon">
                         <i class="fas fa-lock"></i>
                     </div>
-                    <input 
-                        type="password" 
-                        id="password"
-                        name="password" 
-                        placeholder="Contraseña"
-                        required
-                        autocomplete="off"
-                    >
+                    <input type="password" id="password" name="password" placeholder="Contraseña" required
+                        autocomplete="off">
                 </div>
-                
+
                 <div id="errorMessage" class="error-message" style="display: none;"></div>
-                
+
                 <div class="form-options">
                     <label class="checkbox-container">
                         <input type="checkbox" id="recordarme">
@@ -66,77 +56,80 @@
                     </label>
                     <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
                 </div>
-                
+
                 <button type="submit" class="btn-login">
                     <span>Iniciar Sesión</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
-            
+
             <div class="login-footer">
                 <p><i class="fas fa-info-circle"></i> ¿Necesitas ayuda? Contacta al administrador</p>
             </div>
         </div>
     </div>
-    
+
     <!-- Firebase Bundle Local (sin dependencia de CDN) -->
-    <script src="js/firebase-bundle.js" onload="console.log('✅ Firebase bundle cargado localmente')" onerror="console.error('❌ Error al cargar firebase-bundle.js')"></script>
-    
+    <script src="js/firebase-bundle.js" onload="console.log('✅ Firebase bundle cargado localmente')"
+        onerror="console.error('❌ Error al cargar firebase-bundle.js')"></script>
+
     <!-- Inicialización Firebase INLINE -->
     <script>
-      console.log('🔄 Iniciando carga de Firebase...');
-      
-      window.firebaseReady = false;
-      
-      function initializeFirebase() {
-        if (typeof firebase === 'undefined') {
-          console.log('⏳ Esperando Firebase... (intento: ' + (window.firebaseAttempts || 0) + ')');
-          window.firebaseAttempts = (window.firebaseAttempts || 0) + 1;
-          
-          if (window.firebaseAttempts > 50) {
-            console.error('❌ ERROR CRÍTICO: Firebase no se cargó después de 50 intentos');
-            console.error('Verifica que js/firebase-bundle.js exista');
-            return;
-          }
-          
-          setTimeout(initializeFirebase, 200);
-          return;
+        console.log('🔄 Iniciando carga de Firebase...');
+
+        window.firebaseReady = false;
+
+        function initializeFirebase() {
+            if (typeof firebase === 'undefined') {
+                console.log('⏳ Esperando Firebase... (intento: ' + (window.firebaseAttempts || 0) + ')');
+                window.firebaseAttempts = (window.firebaseAttempts || 0) + 1;
+
+                if (window.firebaseAttempts > 50) {
+                    console.error('❌ ERROR CRÍTICO: Firebase no se cargó después de 50 intentos');
+                    console.error('Verifica que js/firebase-bundle.js exista');
+                    return;
+                }
+
+                setTimeout(initializeFirebase, 200);
+                return;
+            }
+
+            console.log('✅ Firebase SDK disponible');
+
+            try {
+                // Firebase ya está inicializado en el bundle, solo exponemos los servicios
+                window.auth = firebase.auth();
+                window.db = firebase.firestore();
+                window.storage = firebase.storage();
+                window.firebaseReady = true;
+
+                console.log('✓ Firebase inicializado correctamente');
+                console.log('  - Auth disponible:', typeof window.auth !== 'undefined');
+                console.log('  - Firestore disponible:', typeof window.db !== 'undefined');
+                console.log('  - Storage disponible:', typeof window.storage !== 'undefined');
+
+                // Notificar que Firebase está listo
+                window.dispatchEvent(new Event('firebaseReady'));
+            } catch (error) {
+                console.error('❌ Error al inicializar Firebase:', error.message);
+                setTimeout(initializeFirebase, 500);
+            }
         }
 
-        console.log('✅ Firebase SDK disponible');
-        
-        try {
-          // Firebase ya está inicializado en el bundle, solo exponemos los servicios
-          window.auth = firebase.auth();
-          window.db = firebase.firestore();
-          window.storage = firebase.storage();
-          window.firebaseReady = true;
-          
-          console.log('✓ Firebase inicializado correctamente');
-          console.log('  - Auth disponible:', typeof window.auth !== 'undefined');
-          console.log('  - Firestore disponible:', typeof window.db !== 'undefined');
-          console.log('  - Storage disponible:', typeof window.storage !== 'undefined');
-          
-          // Notificar que Firebase está listo
-          window.dispatchEvent(new Event('firebaseReady'));
-        } catch (error) {
-          console.error('❌ Error al inicializar Firebase:', error.message);
-          setTimeout(initializeFirebase, 500);
-        }
-      }
-
-      // Iniciar después de que carguen todos los scripts
-      window.addEventListener('load', initializeFirebase);
-      // Intentar lo antes posible
-      initializeFirebase();
+        // Iniciar después de que carguen todos los scripts
+        window.addEventListener('load', initializeFirebase);
+        // Intentar lo antes posible
+        initializeFirebase();
     </script>
-    
-    <!-- Utilidades Firebase -->
-    <script src="js/firebase-utils.js"></script>
-    
+
     <!-- Scripts de configuración del proyecto -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
+
+    <!-- Utilidades Firebase -->
+    <script src="js/firebase-utils.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/login.js"></script>
 </body>
+
 </html>

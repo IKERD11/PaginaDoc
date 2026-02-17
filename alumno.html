@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal del Alumno - Sistema de Gestión Documental</title>
+    <link rel="icon" type="image/x-icon"
+        href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="alumno-page">
+    <!-- Formas decorativas animadas en el fondo -->
+    <div class="page-shapes">
+        <div class="page-shape"></div>
+        <div class="page-shape"></div>
+        <div class="page-shape"></div>
+    </div>
+
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-glass">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <img src="img/logo-tec.png" alt="Logo TecNM"
+                    style="width: 28px; height: 28px; object-fit: contain; margin-right: 4px;">
+                <span>Portal del Alumno</span>
+            </div>
+            <div class="navbar-menu">
+                <button class="notification-btn" id="notificationBtn">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="notificationBadge">0</span>
+                </button>
+                <span class="user-info">
+                    <i class="fas fa-user"></i>
+                    <span id="alumnoName">Alumno</span>
+                </span>
+                <button id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="layout-container">
+        <aside class="sidebar sidebar-glass">
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-section="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </li>
+                <li class="menu-item" data-section="documentos">
+                    <i class="fas fa-file-upload"></i>
+                    <span>Mis Documentos</span>
+                </li>
+                <li class="menu-item" data-section="cita">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Mi Cita</span>
+                </li>
+                <li class="menu-item" data-section="mensajes">
+                    <i class="fas fa-envelope"></i>
+                    <span>Mensajes</span>
+                    <span class="badge" id="mensajesBadge">0</span>
+                </li>
+                <li class="menu-item" data-section="ayuda">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Ayuda</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <!-- Sección Dashboard -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-home"></i> Bienvenido</h2>
+                    <p>Resumen de tu documentación</p>
+                </div>
+
+                <!-- Barra de progreso general -->
+                <div class="progress-card">
+                    <h3><i class="fas fa-tasks"></i> Progreso General de Documentación</h3>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <span class="progress-text" id="progressText">0%</span>
+                    </div>
+                    <p id="progressMessage"></p>
+                </div>
+
+                <!-- Estadísticas rápidas -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalDocumentos">0</h3>
+                            <p>Total de Documentos</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="documentosAprobados">0</h3>
+                            <p>Aprobados</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="documentosPendientes">0</h3>
+                            <p>Pendientes</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="documentosRechazados">0</h3>
+                            <p>Rechazados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertas y notificaciones -->
+                <div id="alertasContainer" class="alertas-container">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <!-- Próxima cita -->
+                <div class="cita-card" id="citaCard">
+                    <h3><i class="fas fa-calendar-alt"></i> Tu Cita Presencial</h3>
+                    <div id="citaInfo">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>No tienes una cita agendada aún</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Documentos -->
+            <section id="documentos-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-upload"></i> Mis Documentos</h2>
+                    <p>Gestiona y sube tus documentos requeridos</p>
+                </div>
+
+                <!-- Checklist de documentos -->
+                <div class="documentos-checklist">
+                    <div class="checklist-header">
+                        <h3><i class="fas fa-list-check"></i> Documentos Requeridos</h3>
+                        <div class="filter-buttons-container">
+                            <button class="filter-btn active" data-filter="todos">
+                                Todos
+                            </button>
+                            <button class="filter-btn" data-filter="pendiente">
+                                Pendientes
+                            </button>
+                            <button class="filter-btn" data-filter="aprobado">
+                                Aprobados
+                            </button>
+                            <button class="filter-btn" data-filter="rechazado">
+                                Rechazados
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="documentosContainer" class="documentos-grid">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Cita -->
+            <section id="cita-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-check"></i> Mi Cita Presencial</h2>
+                    <p>Información sobre tu cita para entrega física de documentos</p>
+                </div>
+
+                <div id="citaDetalleContainer" class="cita-detalle">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <h4>Información Importante</h4>
+                        <ul>
+                            <li>La cita se asigna automáticamente cuando tu documentación esté completa y aprobada</li>
+                            <li>Debes presentarte con tus documentos originales</li>
+                            <li>Llega 10 minutos antes de tu hora asignada</li>
+                            <li>Confirma tu asistencia al menos 24 horas antes</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Mensajes -->
+            <section id="mensajes-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-envelope"></i> Mensajes</h2>
+                    <button class="btn-primary" id="btnNuevoMensaje">
+                        <i class="fas fa-plus"></i> Nuevo Mensaje
+                    </button>
+                </div>
+
+                <div class="mensajes-container">
+                    <div class="mensajes-list">
+                        <div class="filter-bar">
+                            <input type="text" id="searchMensaje" placeholder="Buscar mensajes...">
+                            <select id="filterMensajes">
+                                <option value="">Todos</option>
+                                <option value="no-leido">No leídos</option>
+                                <option value="leido">Leídos</option>
+                            </select>
+                        </div>
+                        <div id="mensajesListContainer">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div class="mensaje-detalle">
+                        <div id="mensajeDetalleContainer">
+                            <div class="empty-state">
+                                <i class="fas fa-envelope-open"></i>
+                                <p>Selecciona un mensaje para ver los detalles</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Ayuda -->
+            <section id="ayuda-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-question-circle"></i> Centro de Ayuda</h2>
+                    <p>Encuentra respuestas a tus preguntas más comunes</p>
+                </div>
+
+                <div class="ayuda-container">
+                    <!-- Preguntas Frecuentes -->
+                    <div class="faq-section">
+                        <div class="faq-header">
+                            <h3><i class="fas fa-book"></i> Preguntas Frecuentes</h3>
+                            <p>Aquí encontrarás respuestas a las dudas más comunes</p>
+                        </div>
+
+                        <div class="faq-items">
+                            <div class="faq-item">
+                                <button class="faq-question">
+                                    <span class="faq-icon"><i class="fas fa-file-upload"></i></span>
+                                    <span class="faq-text">¿Qué documentos necesito subir?</span>
+                                    <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div class="faq-answer">
+                                    <p>Los documentos requeridos aparecen en la sección "Mis Documentos". Cada documento
+                                        tiene una descripción específica de lo que debes subir. Todos son obligatorios
+                                        para avanzar en el proceso.</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <button class="faq-question">
+                                    <span class="faq-icon"><i class="fas fa-file-pdf"></i></span>
+                                    <span class="faq-text">¿Qué formato deben tener mis documentos?</span>
+                                    <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div class="faq-answer">
+                                    <p>Todos los documentos deben estar en formato PDF. El tamaño máximo permitido es de
+                                        5 MB por documento. Asegúrate de que los archivos sean legibles y estén
+                                        completos.</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <button class="faq-question">
+                                    <span class="faq-icon"><i class="fas fa-calendar-check"></i></span>
+                                    <span class="faq-text">¿Cuándo recibiré mi cita presencial?</span>
+                                    <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div class="faq-answer">
+                                    <p>Una vez que todos tus documentos estén aprobados, el área administrativa te
+                                        asignará una cita. Recibirás una notificación por correo electrónico y en el
+                                        sistema dentro de 5 a 7 días hábiles.</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <button class="faq-question">
+                                    <span class="faq-icon"><i class="fas fa-exclamation-circle"></i></span>
+                                    <span class="faq-text">¿Qué hago si un documento fue rechazado?</span>
+                                    <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div class="faq-answer">
+                                    <p>Si un documento es rechazado, verás las observaciones del área administrativa en
+                                        rojo. Lee cuidadosamente las observaciones y vuelve a subir el documento
+                                        corregido en la sección de documentos.</p>
+                                </div>
+                            </div>
+
+                            <div class="faq-item">
+                                <button class="faq-question">
+                                    <span class="faq-icon"><i class="fas fa-edit"></i></span>
+                                    <span class="faq-text">¿Puedo modificar mi cita?</span>
+                                    <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div class="faq-answer">
+                                    <p>La modificación de citas debe ser solicitada al área administrativa. Puedes
+                                        enviar un mensaje a través del sistema o contactar directamente por correo
+                                        electrónico o teléfono.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div class="contacto-section">
+                        <div class="contacto-header">
+                            <h3><i class="fas fa-headset"></i> Centro de Contacto</h3>
+                            <p>¿Tienes dudas? Ponte en contacto con nosotros</p>
+                        </div>
+                        <div class="contacto-info">
+                            <div class="contacto-item">
+                                <div class="contacto-icono email">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="contacto-contenido">
+                                    <h4>Correo Electrónico</h4>
+                                    <p><a href="mailto:documentacion@escuela.edu.mx">documentacion@escuela.edu.mx</a>
+                                    </p>
+                                    <small>Respuesta en 24 horas</small>
+                                </div>
+                            </div>
+
+                            <div class="contacto-item">
+                                <div class="contacto-icono phone">
+                                    <i class="fas fa-phone-alt"></i>
+                                </div>
+                                <div class="contacto-contenido">
+                                    <h4>Teléfono</h4>
+                                    <p><a href="tel:+5551234567">(555) 123-4567</a></p>
+                                    <small>Llamadas de lunes a viernes</small>
+                                </div>
+                            </div>
+
+                            <div class="contacto-item">
+                                <div class="contacto-icono schedule">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="contacto-contenido">
+                                    <h4>Horario de Atención</h4>
+                                    <p>Lunes a Viernes</p>
+                                    <small>8:00 AM - 4:00 PM</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Panel de notificaciones -->
+    <div id="notificationPanel" class="notification-panel">
+        <div class="notification-header">
+            <h3><i class="fas fa-bell"></i> Notificaciones</h3>
+            <button id="closeNotifications"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="notificacionesContainer" class="notificaciones-list">
+            <!-- Se llenará dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="modalContainer"></div>
+
+    <!-- Firebase Bundle Local -->
+    <script src="js/firebase-bundle.js" onload="console.log('✅ Firebase bundle cargado')"
+        onerror="console.error('❌ Error al cargar firebase-bundle.js')"></script>
+
+    <!-- Inicialización Firebase INLINE -->
+    <script>
+        console.log('🔄 Iniciando carga de Firebase en alumno...');
+
+        window.firebaseReady = false;
+
+        function initializeFirebase() {
+            if (typeof firebase === 'undefined') {
+                console.log('⏳ Esperando Firebase... (intento: ' + (window.firebaseAttempts || 0) + ')');
+                window.firebaseAttempts = (window.firebaseAttempts || 0) + 1;
+
+                if (window.firebaseAttempts > 50) {
+                    console.error('❌ ERROR CRÍTICO: Firebase no se cargó después de 50 intentos');
+                    return;
+                }
+
+                setTimeout(initializeFirebase, 200);
+                return;
+            }
+
+            console.log('✅ Firebase SDK disponible');
+
+            try {
+                // Firebase ya está inicializado en el bundle, solo exponemos los servicios
+                window.auth = firebase.auth();
+                window.db = firebase.firestore();
+                window.storage = firebase.storage();
+                window.firebaseReady = true;
+
+                console.log('✓ Firebase inicializado correctamente');
+                console.log('  - Auth disponible:', typeof window.auth !== 'undefined');
+                console.log('  - Firestore disponible:', typeof window.db !== 'undefined');
+                console.log('  - Storage disponible:', typeof window.storage !== 'undefined');
+
+                // Notificar que Firebase está listo
+                window.dispatchEvent(new Event('firebaseReady'));
+            } catch (error) {
+                console.error('❌ Error al inicializar Firebase:', error.message);
+                setTimeout(initializeFirebase, 500);
+            }
+        }
+
+        // Iniciar después de que carguen todos los scripts
+        window.addEventListener('load', initializeFirebase);
+        // Intentar lo antes posible
+        initializeFirebase();
+    </script>
+
+    <!-- Scripts de configuración del proyecto -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+
+    <!-- Sistema de autenticación -->
+    <script src="js/auth.js"></script>
+    <script src="js/firebase-utils.js"></script>
+
+    <!-- Scripts de utilidades -->
+    <script src="js/storage.js"></script>
+    <script src="js/documentos.js"></script>
+    <script src="js/citas.js"></script>
+    <script src="js/mensajes.js"></script>
+    <script src="js/notificaciones.js"></script>
+    <script src="js/gestor-archivos.js"></script>
+    <script src="js/visor-documentos.js"></script>
+
+    <!-- Panel del alumno -->
+    <script src="js/alumno.js"></script>
+</body>
+
+</html>

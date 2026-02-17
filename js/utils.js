@@ -12,9 +12,9 @@ function formatearFecha(fecha) {
 function formatearFechaHora(fecha) {
     if (!fecha) return '';
     const date = new Date(fecha);
-    const opciones = { 
-        year: 'numeric', 
-        month: 'long', 
+    const opciones = {
+        year: 'numeric',
+        month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
@@ -31,22 +31,22 @@ function formatearHora(hora) {
 // Validar formato de archivo
 function validarArchivo(file) {
     const errores = [];
-    
+
     if (!file) {
         errores.push('No se ha seleccionado ningún archivo');
         return errores;
     }
-    
+
     // Validar tipo
     if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
         errores.push('El archivo debe ser formato PDF');
     }
-    
+
     // Validar tamaño
     if (file.size > CONFIG.MAX_FILE_SIZE) {
         errores.push(`El archivo no debe superar ${CONFIG.MAX_FILE_SIZE / (1024 * 1024)} MB`);
     }
-    
+
     return errores;
 }
 
@@ -69,19 +69,19 @@ function generarId() {
 function mostrarToast(mensaje, tipo = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${tipo}`;
-    
+
     const iconos = {
         success: 'fa-check-circle',
         error: 'fa-times-circle',
         warning: 'fa-exclamation-triangle',
         info: 'fa-info-circle'
     };
-    
+
     toast.innerHTML = `
         <i class="fas ${iconos[tipo]}"></i>
         <span>${mensaje}</span>
     `;
-    
+
     // Estilos del toast
     Object.assign(toast.style, {
         position: 'fixed',
@@ -90,9 +90,9 @@ function mostrarToast(mensaje, tipo = 'info') {
         padding: '15px 20px',
         borderRadius: '8px',
         color: '#fff',
-        backgroundColor: tipo === 'success' ? '#10b981' : 
-                        tipo === 'error' ? '#ef4444' : 
-                        tipo === 'warning' ? '#f59e0b' : '#3b82f6',
+        backgroundColor: tipo === 'success' ? '#10b981' :
+            tipo === 'error' ? '#ef4444' :
+                tipo === 'warning' ? '#f59e0b' : '#3b82f6',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         zIndex: '10000',
         animation: 'slideIn 0.3s ease',
@@ -101,9 +101,9 @@ function mostrarToast(mensaje, tipo = 'info') {
         gap: '10px',
         minWidth: '300px'
     });
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => toast.remove(), 300);
@@ -113,10 +113,10 @@ function mostrarToast(mensaje, tipo = 'info') {
 // Crear modal
 function crearModal(titulo, contenido, botones = []) {
     const modalContainer = document.getElementById('modalContainer');
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    
+
     modal.innerHTML = `
         <div class="modal">
             <div class="modal-header">
@@ -138,10 +138,10 @@ function crearModal(titulo, contenido, botones = []) {
             </div>
         </div>
     `;
-    
+
     modalContainer.innerHTML = '';
     modalContainer.appendChild(modal);
-    
+
     // Cerrar al hacer clic fuera
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -158,32 +158,36 @@ function cerrarModal() {
 
 // Confirmar acción
 function confirmar(titulo, mensaje, callback) {
+    const callbackId = 'cb_' + Math.random().toString(36).substr(2, 9);
+    window._pendingCallbacks = window._pendingCallbacks || {};
+    window._pendingCallbacks[callbackId] = callback;
+
     const contenido = `<p>${mensaje}</p>`;
     const botones = [
         {
             texto: 'Cancelar',
             tipo: 'secondary',
-            onclick: 'cerrarModal()'
+            onclick: `delete window._pendingCallbacks['${callbackId}']; cerrarModal();`
         },
         {
             texto: 'Confirmar',
             tipo: 'primary',
-            onclick: `cerrarModal(); (${callback.toString()})()`
+            onclick: `const cb = window._pendingCallbacks['${callbackId}']; delete window._pendingCallbacks['${callbackId}']; cerrarModal(); if(cb) cb();`
         }
     ];
-    
+
     crearModal(titulo, contenido, botones);
 }
 
 // Calcular progreso de documentos
 function calcularProgreso(documentos) {
     if (!documentos || documentos.length === 0) return 0;
-    
+
     const documentosRequeridos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
     const totalRequeridos = documentosRequeridos.filter(d => d.obligatorio).length;
-    
+
     if (totalRequeridos === 0) return 0;
-    
+
     const aprobados = documentos.filter(d => d.estado === 'aprobado').length;
     return Math.round((aprobados / totalRequeridos) * 100);
 }
@@ -193,13 +197,13 @@ function obtenerEstadoDocumentacion(numeroControl) {
     const documentos = JSON.parse(localStorage.getItem('documentos')) || [];
     const docsAlumno = documentos.filter(d => d.numeroControl === numeroControl);
     const documentosRequeridos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
-    
+
     const total = documentosRequeridos.length;
     const aprobados = docsAlumno.filter(d => d.estado === 'aprobado').length;
     const pendientes = docsAlumno.filter(d => d.estado === 'pendiente').length;
     const rechazados = docsAlumno.filter(d => d.estado === 'rechazado').length;
     const sinSubir = total - docsAlumno.length;
-    
+
     return {
         total,
         aprobados,
@@ -219,7 +223,7 @@ function obtenerBadgeEstado(estado) {
         rechazado: '<span class="badge badge-rechazado"><i class="fas fa-times-circle"></i> Rechazado</span>',
         completo: '<span class="badge badge-completo"><i class="fas fa-check-double"></i> Completo</span>'
     };
-    
+
     return badges[estado] || estado;
 }
 
@@ -227,11 +231,11 @@ function obtenerBadgeEstado(estado) {
 function validarPeriodoActivo() {
     const periodo = JSON.parse(localStorage.getItem('periodo'));
     if (!periodo) return true;
-    
+
     const hoy = new Date();
     const inicio = new Date(periodo.fechaInicio);
     const fin = new Date(periodo.fechaFin);
-    
+
     return hoy >= inicio && hoy <= fin;
 }
 

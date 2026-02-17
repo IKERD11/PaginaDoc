@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo - Sistema de Gestión Documental</title>
+    <link rel="icon" type="image/x-icon"
+        href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="admin-page">
+    <!-- Formas decorativas animadas en el fondo -->
+    <div class="page-shapes">
+        <div class="page-shape"></div>
+        <div class="page-shape"></div>
+        <div class="page-shape"></div>
+    </div>
+
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-glass">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <img src="img/logo-tec.png" alt="Logo TecNM"
+                    style="width: 28px; height: 28px; object-fit: contain; margin-right: 4px;">
+                <span>Panel Administrativo</span>
+            </div>
+            <div class="navbar-menu">
+                <span class="user-info">
+                    <i class="fas fa-user-shield"></i>
+                    <span id="adminName">Administrador</span>
+                </span>
+                <button id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="layout-container">
+        <aside class="sidebar sidebar-glass">
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="menu-item" data-section="alumnos">
+                    <i class="fas fa-users"></i>
+                    <span>Gestión de Alumnos</span>
+                </li>
+                <li class="menu-item" data-section="documentos">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Revisión de Documentos</span>
+                </li>
+                <li class="menu-item" data-section="citas">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Gestión de Citas</span>
+                </li>
+                <li class="menu-item" data-section="mensajes">
+                    <i class="fas fa-envelope"></i>
+                    <span>Mensajes</span>
+                    <span class="badge" id="mensajesBadge">0</span>
+                </li>
+                <li class="menu-item" data-section="reportes">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </li>
+                <li class="menu-item" data-section="configuracion">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuración</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <!-- Sección Dashboard -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Dashboard General</h2>
+                    <p>Resumen del estado del sistema</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalAlumnos">0</h3>
+                            <p>Total de Alumnos</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="alumnosCompletos">0</h3>
+                            <p>Documentación Completa</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="documentosPendientes">0</h3>
+                            <p>Documentos Pendientes</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="documentosRechazados">0</h3>
+                            <p>Documentos Rechazados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-charts">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-pie"></i> Estado de Documentación</h3>
+                        <div id="chartDocumentacion" class="chart-container"></div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3><i class="fas fa-calendar-check"></i> Citas de la Semana</h3>
+                        <div id="citasSemana" class="citas-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Alumnos -->
+            <section id="alumnos-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Gestión de Alumnos</h2>
+                    <button class="btn-primary" id="btnNuevoAlumno">
+                        <i class="fas fa-plus"></i> Nuevo Alumno
+                    </button>
+                </div>
+
+                <div class="filter-bar">
+                    <input type="text" id="searchAlumno" placeholder="Buscar por nombre o número de control...">
+                    <select id="filterEstado">
+                        <option value="">Todos los estados</option>
+                        <option value="completo">Documentación Completa</option>
+                        <option value="incompleto">Documentación Incompleta</option>
+                        <option value="pendiente">Pendiente de Revisión</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Número de Control</th>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Progreso</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alumnosTableBody">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sección Documentos -->
+            <section id="documentos-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-alt"></i> Revisión de Documentos</h2>
+                    <p>Revisa y aprueba/rechaza los documentos de los alumnos</p>
+                </div>
+
+                <div class="filtros-documentos">
+                    <div class="filtros-row">
+                        <div class="filtro-group" style="flex: 2;">
+                            <label for="searchDocumento"><i class="fas fa-search"></i> Buscar documento</label>
+                            <input type="text" id="searchDocumento"
+                                placeholder="Buscar por número de control, correo o nombre del alumno..."
+                                class="filtro-input">
+                        </div>
+                        <div class="filtro-group">
+                            <label for="filterAlumnoDocumentos">Alumno</label>
+                            <select id="filterAlumnoDocumentos" class="filtro-select">
+                                <option value="">Todos los alumnos</option>
+                            </select>
+                        </div>
+                        <div class="filtro-group">
+                            <label for="filterEstadoDocumento">Estado</label>
+                            <select id="filterEstadoDocumento" class="filtro-select">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendientes</option>
+                                <option value="aprobado">Aprobados</option>
+                                <option value="rechazado">Rechazados</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="documentosContainer" class="documentos-grid">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </section>
+
+            <!-- Sección Citas -->
+            <section id="citas-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Gestión de Citas</h2>
+                    <button class="btn-primary" id="btnNuevaCita">
+                        <i class="fas fa-plus"></i> Agendar Cita
+                    </button>
+                </div>
+
+                <div class="calendar-controls">
+                    <button id="prevWeek"><i class="fas fa-chevron-left"></i></button>
+                    <h3 id="currentWeek">Semana Actual</h3>
+                    <button id="nextWeek"><i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <div id="calendarContainer" class="calendar-grid">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <div class="citas-list-container">
+                    <h3>Próximas Citas</h3>
+                    <div id="citasList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Mensajes -->
+            <section id="mensajes-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-envelope"></i> Sistema de Mensajes</h2>
+                    <button class="btn-primary" id="btnNuevoMensaje">
+                        <i class="fas fa-plus"></i> Nuevo Mensaje
+                    </button>
+                </div>
+
+                <div class="mensajes-container">
+                    <div class="mensajes-list">
+                        <div class="filter-bar">
+                            <input type="text" id="searchMensaje" placeholder="Buscar mensajes...">
+                            <select id="filterCategoria">
+                                <option value="">Todas las categorías</option>
+                                <option value="documento">Documentos</option>
+                                <option value="cita">Citas</option>
+                                <option value="general">General</option>
+                            </select>
+                        </div>
+                        <div id="mensajesListContainer">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div class="mensaje-detalle">
+                        <div id="mensajeDetalleContainer">
+                            <div class="empty-state">
+                                <i class="fas fa-envelope-open"></i>
+                                <p>Selecciona un mensaje para ver los detalles</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Reportes -->
+            <section id="reportes-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Reportes y Estadísticas</h2>
+                </div>
+
+                <div class="reportes-filters">
+                    <div class="form-group">
+                        <label>Tipo de Reporte:</label>
+                        <select id="tipoReporte">
+                            <option value="general">General</option>
+                            <option value="documentos">Documentos</option>
+                            <option value="citas">Citas</option>
+                            <option value="alumnos">Alumnos</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="fechaInicio">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="fechaFin">
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn-primary" id="generarReporte">
+                            <i class="fas fa-chart-bar"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+
+                <div class="reportes-export">
+                    <button class="btn-secondary" id="exportPDF">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                    <button class="btn-secondary" id="exportExcel">
+                        <i class="fas fa-file-excel"></i> Exportar Excel
+                    </button>
+                </div>
+
+                <div id="reporteContainer" class="reporte-contenido">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </section>
+
+            <!-- Sección Configuración -->
+            <section id="configuracion-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cog"></i> Configuración del Sistema</h2>
+                </div>
+
+                <div class="config-tabs">
+                    <button class="tab-btn active" data-tab="documentos-req">Documentos Requeridos</button>
+                    <button class="tab-btn" data-tab="usuarios">Usuarios</button>
+                    <button class="tab-btn" data-tab="periodos">Periodos</button>
+                    <button class="tab-btn" data-tab="bitacora">Bitácora</button>
+                </div>
+
+                <div class="config-content">
+                    <div id="documentos-req-tab" class="tab-content active">
+                        <div class="section-header-actions"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0;">Documentos Obligatorios</h3>
+                            <button class="btn-primary" id="btnAgregarDocumento">
+                                <i class="fas fa-plus"></i> Agregar Documento
+                            </button>
+                        </div>
+                        <div id="documentosRequeridos" class="documentos-req-list">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div id="usuarios-tab" class="tab-content">
+                        <div class="section-header-actions"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0;">Gestión de Usuarios</h3>
+                            <button class="btn-primary" id="btnAgregarUsuario">
+                                <i class="fas fa-plus"></i> Agregar Usuario
+                            </button>
+                        </div>
+                        <div id="usuariosList" class="usuarios-list">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div id="periodos-tab" class="tab-content">
+                        <h3>Configuración de Periodos</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Fecha Inicio Recepción:</label>
+                                <input type="date" id="fechaInicioPeriodo">
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha Fin Recepción:</label>
+                                <input type="date" id="fechaFinPeriodo">
+                            </div>
+                            <div class="form-group">
+                                <label>Límite de Citas por Día:</label>
+                                <input type="number" id="limiteCitasDia" min="1" max="50" value="10">
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="guardarPeriodo">
+                            <i class="fas fa-save"></i> Guardar Configuración
+                        </button>
+                    </div>
+
+                    <div id="bitacora-tab" class="tab-content">
+                        <h3>Bitácora de Acciones</h3>
+                        <div class="filter-bar">
+                            <input type="text" id="searchBitacora" placeholder="Buscar en bitácora...">
+                            <select id="filterTipoAccion">
+                                <option value="">Todas las acciones</option>
+                                <option value="login">Inicio de Sesión</option>
+                                <option value="documento">Documentos</option>
+                                <option value="cita">Citas</option>
+                                <option value="usuario">Usuarios</option>
+                            </select>
+                        </div>
+                        <div id="bitacoraList" class="bitacora-list">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modales -->
+    <div id="modalContainer"></div>
+
+
+    <!-- Firebase Bundle Local -->
+    <script src="js/firebase-bundle.js" onload="console.log('✅ Firebase bundle cargado')"
+        onerror="console.error('❌ Error al cargar firebase-bundle.js')"></script>
+
+    <!-- Inicialización Firebase INLINE -->
+    <script>
+        console.log('🔄 Iniciando carga de Firebase en admin...');
+
+        window.firebaseReady = false;
+
+        function initializeFirebase() {
+            if (typeof firebase === 'undefined') {
+                console.log('⏳ Esperando Firebase... (intento: ' + (window.firebaseAttempts || 0) + ')');
+                window.firebaseAttempts = (window.firebaseAttempts || 0) + 1;
+
+                if (window.firebaseAttempts > 50) {
+                    console.error('❌ ERROR CRÍTICO: Firebase no se cargó después de 50 intentos');
+                    return;
+                }
+
+                setTimeout(initializeFirebase, 200);
+                return;
+            }
+
+            console.log('✅ Firebase SDK disponible');
+
+            try {
+                // Firebase ya está inicializado en el bundle, solo exponemos los servicios
+                window.auth = firebase.auth();
+                window.db = firebase.firestore();
+                window.storage = firebase.storage();
+                window.firebaseReady = true;
+
+                console.log('✓ Firebase inicializado correctamente');
+                console.log('  - Auth disponible:', typeof window.auth !== 'undefined');
+                console.log('  - Firestore disponible:', typeof window.db !== 'undefined');
+                console.log('  - Storage disponible:', typeof window.storage !== 'undefined');
+
+                // Notificar que Firebase está listo
+                window.dispatchEvent(new Event('firebaseReady'));
+            } catch (error) {
+                console.error('❌ Error al inicializar Firebase:', error.message);
+                setTimeout(initializeFirebase, 500);
+            }
+        }
+
+        // Iniciar después de que carguen todos los scripts
+        window.addEventListener('load', initializeFirebase);
+        // Intentar lo antes posible
+        initializeFirebase();
+    </script>
+
+    <!-- Scripts de configuración del proyecto -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+
+    <!-- Sistema de autenticación -->
+    <script src="js/auth.js"></script>
+    <script src="js/firebase-utils.js"></script>
+
+    <!-- Scripts de utilidades -->
+    <script src="js/storage.js"></script>
+    <script src="js/documentos.js"></script>
+    <script src="js/citas.js"></script>
+    <script src="js/mensajes.js"></script>
+    <script src="js/notificaciones.js"></script>
+    <script src="js/reportes.js"></script>
+    <script src="js/gestor-archivos.js"></script>
+    <script src="js/visor-documentos.js"></script>
+
+    <!-- Panel administrativo -->
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

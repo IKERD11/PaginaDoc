@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Evitar inicialización multiple
     if (alumnoInitialized) return;
     alumnoInitialized = true;
-    
+
     // Verificar autenticación y rol
     const usuario = verificarAutenticacion();
     if (!usuario || usuario.rol !== 'alumno') {
@@ -14,16 +14,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await cerrarSesionFirebase();
         return;
     }
-    
+
     const usuarioActual = obtenerUsuarioActual();
     document.getElementById('alumnoName').textContent = usuarioActual.nombre;
-    
+
     // Inicializar componentes
     inicializarNavegacionAlumno();
     inicializarEventosAlumno();
     inicializarNotificaciones();
     await cargarDashboardAlumno();
-    
+
     // Actualizar periódicamente
     setInterval(async () => {
         await actualizarBadgeNotificaciones();
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Inicializar navegación
 function inicializarNavegacionAlumno() {
     const menuItems = document.querySelectorAll('.menu-item');
-    
+
     menuItems.forEach(item => {
         item.addEventListener('click', () => {
             const seccion = item.getAttribute('data-section');
@@ -50,13 +50,13 @@ async function navegarASeccionAlumno(seccion) {
         item.classList.remove('active');
     });
     document.querySelector(`[data-section="${seccion}"]`).classList.add('active');
-    
+
     // Mostrar sección correspondiente
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
     document.getElementById(`${seccion}-section`).classList.add('active');
-    
+
     // Cargar datos de la sección
     switch (seccion) {
         case 'dashboard':
@@ -83,13 +83,13 @@ function inicializarEventosAlumno() {
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         await cerrarSesionFirebase();
     });
-    
+
     // Botón de nuevo mensaje
     const btnNuevoMensaje = document.getElementById('btnNuevoMensaje');
     if (btnNuevoMensaje) {
         btnNuevoMensaje.addEventListener('click', mostrarModalNuevoMensajeAlumno);
     }
-    
+
     // FAQ - preguntas frecuentes
     const faqQuestions = document.querySelectorAll('.faq-question');
     faqQuestions.forEach(question => {
@@ -104,11 +104,11 @@ function inicializarEventosAlumno() {
 async function cargarDashboardAlumno() {
     const usuarioActual = obtenerUsuarioActual();
     const estadoDoc = await obtenerEstadoDocumentacion(usuarioActual.numeroControl);
-    
+
     // Actualizar barra de progreso
     document.getElementById('progressFill').style.width = estadoDoc.progreso + '%';
     document.getElementById('progressText').textContent = estadoDoc.progreso + '%';
-    
+
     // Mensaje de progreso
     const progressMessage = document.getElementById('progressMessage');
     if (estadoDoc.completo) {
@@ -118,16 +118,16 @@ async function cargarDashboardAlumno() {
     } else {
         progressMessage.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #f59e0b;"></i> Comienza subiendo tus documentos.`;
     }
-    
+
     // Actualizar estadísticas
     document.getElementById('totalDocumentos').textContent = estadoDoc.total;
     document.getElementById('documentosAprobados').textContent = estadoDoc.aprobados;
     document.getElementById('documentosPendientes').textContent = estadoDoc.pendientes;
     document.getElementById('documentosRechazados').textContent = estadoDoc.rechazados;
-    
+
     // Cargar alertas
     cargarAlertas();
-    
+
     // Cargar cita
     cargarCitaDashboard();
 }
@@ -136,13 +136,13 @@ function cargarAlertas() {
     const usuarioActual = obtenerUsuarioActual();
     const container = document.getElementById('alertasContainer');
     const alertas = [];
-    
+
     // Verificar documentos rechazados
-    const documentos = obtenerDocumentos({ 
+    const documentos = obtenerDocumentos({
         numeroControl: usuarioActual.numeroControl,
         estado: 'rechazado'
     });
-    
+
     if (documentos.length > 0) {
         alertas.push({
             tipo: 'danger',
@@ -152,7 +152,7 @@ function cargarAlertas() {
             textoAccion: 'Ver Documentos'
         });
     }
-    
+
     // Verificar si tiene documentos pendientes por subir
     const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
     if (estadoDoc.sinSubir > 0) {
@@ -164,13 +164,13 @@ function cargarAlertas() {
             textoAccion: 'Subir Documentos'
         });
     }
-    
+
     // Verificar cita próxima
-    const citas = obtenerCitas({ 
+    const citas = obtenerCitas({
         numeroControl: usuarioActual.numeroControl,
         estado: 'pendiente'
     });
-    
+
     if (citas.length > 0 && !citas[0].confirmada) {
         alertas.push({
             tipo: 'info',
@@ -180,7 +180,7 @@ function cargarAlertas() {
             textoAccion: 'Ver Cita'
         });
     }
-    
+
     // Verificar periodo activo
     if (!validarPeriodoActivo()) {
         alertas.push({
@@ -191,12 +191,12 @@ function cargarAlertas() {
             textoAccion: null
         });
     }
-    
+
     if (alertas.length === 0) {
         container.innerHTML = '';
         return;
     }
-    
+
     container.innerHTML = alertas.map(alerta => `
         <div class="alert alert-${alerta.tipo}">
             <div style="flex: 1;">
@@ -217,12 +217,12 @@ function cargarCitaDashboard() {
     const citas = obtenerCitas({ numeroControl: usuarioActual.numeroControl })
         .filter(c => c.estado !== 'cancelada' && c.estado !== 'completada')
         .sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora));
-    
+
     const citaInfo = document.getElementById('citaInfo');
-    
+
     if (citas.length === 0) {
         const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
-        
+
         if (estadoDoc.completo) {
             citaInfo.innerHTML = `
                 <div class="alert alert-info">
@@ -240,7 +240,7 @@ function cargarCitaDashboard() {
         }
         return;
     }
-    
+
     const cita = citas[0];
     citaInfo.innerHTML = `
         <div class="cita-info-card">
@@ -284,7 +284,7 @@ function cargarCitaDashboard() {
 
 function confirmarAsistenciaDashboard(citaId) {
     const resultado = confirmarAsistencia(citaId);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cargarCitaDashboard();
@@ -294,16 +294,16 @@ function confirmarAsistenciaDashboard(citaId) {
 }
 
 // ===== DOCUMENTOS =====
-function cargarDocumentosAlumno() {
+async function cargarDocumentosAlumno() {
     const usuarioActual = obtenerUsuarioActual();
-    const documentos = obtenerDocumentosAlumno(usuarioActual.numeroControl);
+    const documentos = await obtenerDocumentosAlumno(usuarioActual.numeroControl);
     const container = document.getElementById('documentosContainer');
-    
+
     container.innerHTML = documentos.map(doc => {
         const estado = doc.estado || 'sin_subir';
         let estadoHTML = '';
         let accionesHTML = '';
-        
+
         switch (estado) {
             case 'sin_subir':
                 estadoHTML = '<span class="badge badge-pendiente"><i class="fas fa-upload"></i> Sin subir</span>';
@@ -316,13 +316,13 @@ function cargarDocumentosAlumno() {
                     <input type="file" id="file-${doc.id}" style="display: none;" accept="application/pdf" onchange="manejarSeleccionArchivo('${doc.id}', this.files[0])">
                 `;
                 break;
-                
+
             case 'pendiente':
                 estadoHTML = '<span class="badge badge-pendiente"><i class="fas fa-clock"></i> En revisión</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; text-align: center; background: #fef3c7; border-radius: 8px;">
+                    <div style="padding: 20px; text-align: center; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
                         <i class="fas fa-hourglass-half" style="font-size: 40px; color: #f59e0b;"></i>
-                        <p style="margin-top: 10px; color: #92400e;">Tu documento está siendo revisado</p>
+                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9);">Tu documento está siendo revisado</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn-secondary" style="flex: 1;" onclick="verVistaPrevia('${doc.documento.id}')">
                                 <i class="fas fa-eye"></i> Ver
@@ -334,13 +334,13 @@ function cargarDocumentosAlumno() {
                     </div>
                 `;
                 break;
-                
+
             case 'aprobado':
                 estadoHTML = '<span class="badge badge-aprobado"><i class="fas fa-check-circle"></i> Aprobado</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; text-align: center; background: #d1fae5; border-radius: 8px;">
+                    <div style="padding: 20px; text-align: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
                         <i class="fas fa-check-circle" style="font-size: 40px; color: #10b981;"></i>
-                        <p style="margin-top: 10px; color: #065f46;"><strong>¡Documento aprobado!</strong></p>
+                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9);"><strong>¡Documento aprobado!</strong></p>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn-secondary" style="flex: 1;" onclick="verVistaPrevia('${doc.documento.id}')">
                                 <i class="fas fa-eye"></i> Ver
@@ -352,33 +352,38 @@ function cargarDocumentosAlumno() {
                     </div>
                 `;
                 break;
-                
+
             case 'rechazado':
                 estadoHTML = '<span class="badge badge-rechazado"><i class="fas fa-times-circle"></i> Rechazado</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; background: #fee2e2; border-radius: 8px;">
-                        <i class="fas fa-times-circle" style="font-size: 40px; color: #ef4444;"></i>
-                        <p style="margin-top: 10px; color: #991b1b;"><strong>Documento rechazado</strong></p>
-                        <div class="alert alert-danger" style="margin: 15px 0;">
-                            <strong>Observaciones:</strong>
-                            <p style="margin-top: 5px;">${doc.documento.observaciones}</p>
+                    <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
+                        <i class="fas fa-times-circle" style="font-size: 40px; color: #ef4444; text-align: center; display: block;"></i>
+                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9); text-align: center;"><strong>Documento rechazado</strong></p>
+                        <div class="alert alert-danger" style="margin: 15px 0; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: white; padding: 12px; border-radius: 8px;">
+                            <strong style="color: #fecaca;"><i class="fas fa-exclamation-circle"></i> Observaciones:</strong>
+                            <p style="margin-top: 5px; opacity: 0.9;">${doc.documento.observaciones}</p>
                         </div>
-                        <button class="btn-primary" style="width: 100%;" onclick="abrirSelectorArchivo('${doc.id}')">
-                            <i class="fas fa-upload"></i> Volver a Subir
-                        </button>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn-secondary" style="flex: 1;" onclick="verVistaPrevia('${doc.documento.id}')">
+                                <i class="fas fa-eye"></i> Ver lo que subí
+                            </button>
+                            <button class="btn-primary" style="flex: 1;" onclick="abrirSelectorArchivo('${doc.id}')">
+                                <i class="fas fa-upload"></i> Corregir
+                            </button>
+                        </div>
                         <input type="file" id="file-${doc.id}" style="display: none;" accept="application/pdf" onchange="manejarSeleccionArchivo('${doc.id}', this.files[0])">
                     </div>
                 `;
                 break;
         }
-        
+
         return `
             <div class="documento-card ${estado === 'rechazado' ? 'rechazado-highlight' : ''}">
                 <div class="documento-card-header">
                     <div>
                         <h4>${doc.nombre}</h4>
                         <p style="font-size: 13px; color: #6b7280;">${doc.descripcion}</p>
-                        ${doc.obligatorio ? '<span class="badge" style="background: #dbeafe; color: #1e40af; margin-top: 5px;">Obligatorio</span>' : ''}
+                        ${doc.obligatorio ? '<span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); margin-top: 5px;">Obligatorio</span>' : ''}
                     </div>
                     ${estadoHTML}
                 </div>
@@ -388,18 +393,39 @@ function cargarDocumentosAlumno() {
             </div>
         `;
     }).join('');
-    
+
     // Filtros de documentos
     const filterBtns = document.querySelectorAll('.filter-btn');
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             const filter = btn.getAttribute('data-filter');
             filtrarDocumentosAlumno(filter);
         });
     });
+}
+
+// Helpers para carga de archivos
+function abrirSelectorArchivo(docId) {
+    const input = document.getElementById(`file-${docId}`);
+    if (input) {
+        input.click();
+    }
+}
+
+async function manejarSeleccionArchivo(docId, archivo) {
+    if (!archivo) return;
+
+    // Validar archivo antes de subir
+    const errores = validarArchivo(archivo);
+    if (errores.length > 0) {
+        mostrarToast(errores.join(', '), 'error');
+        return;
+    }
+
+    await subirDocumentoAlumno(docId, archivo);
 }
 
 async function subirDocumentoAlumno(tipoDocumento, archivo) {
@@ -407,24 +433,24 @@ async function subirDocumentoAlumno(tipoDocumento, archivo) {
         mostrarToast('No se seleccionó ningún archivo', 'error');
         return;
     }
-    
+
     // Verificar periodo activo
     if (!validarPeriodoActivo()) {
         mostrarToast('El periodo de recepción de documentos no está activo', 'warning');
         return;
     }
-    
+
     const usuarioActual = obtenerUsuarioActual();
-    
+
     // Mostrar indicador de carga
     mostrarToast('Subiendo documento...', 'info');
-    
+
     const resultado = await subirDocumento(archivo, tipoDocumento, usuarioActual.numeroControl);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
-        cargarDocumentosAlumno();
-        cargarDashboardAlumno(); // Actualizar dashboard
+        await cargarDocumentosAlumno();
+        await cargarDashboardAlumno(); // Actualizar dashboard
     } else {
         mostrarToast(resultado.mensaje, 'error');
     }
@@ -432,11 +458,11 @@ async function subirDocumentoAlumno(tipoDocumento, archivo) {
 
 function filtrarDocumentosAlumno(filtro) {
     const cards = document.querySelectorAll('.documento-card');
-    
+
     cards.forEach(card => {
         const badge = card.querySelector('.badge');
         const estado = badge ? badge.textContent.toLowerCase() : '';
-        
+
         if (filtro === 'todos') {
             card.style.display = 'block';
         } else if (filtro === 'pendiente' && (estado.includes('revisión') || estado.includes('sin subir'))) {
@@ -456,12 +482,12 @@ function cargarMiCita() {
     const usuarioActual = obtenerUsuarioActual();
     const citas = obtenerCitas({ numeroControl: usuarioActual.numeroControl })
         .sort((a, b) => new Date(b.fecha + ' ' + b.hora) - new Date(a.fecha + ' ' + a.hora));
-    
+
     const container = document.getElementById('citaDetalleContainer');
-    
+
     if (citas.length === 0) {
         const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
-        
+
         if (estadoDoc.completo) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -484,11 +510,11 @@ function cargarMiCita() {
         }
         return;
     }
-    
+
     container.innerHTML = citas.map(cita => {
         const esFutura = new Date(cita.fecha) >= new Date();
         const esActiva = cita.estado !== 'cancelada' && cita.estado !== 'completada';
-        
+
         return `
             <div class="cita-card" style="background: white; padding: 25px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid ${esActiva ? '#2563eb' : '#9ca3af'};">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
@@ -558,7 +584,7 @@ function confirmarAsistenciaModal(citaId) {
         '¿Confirmas que asistirás a la cita en la fecha y hora programada?',
         () => {
             const resultado = confirmarAsistencia(citaId);
-            
+
             if (resultado.exito) {
                 mostrarToast(resultado.mensaje, 'success');
                 cargarMiCita();
@@ -575,93 +601,107 @@ function cargarMensajesAlumno() {
     const usuarioActual = obtenerUsuarioActual();
     const mensajes = obtenerMensajes({ numeroControl: usuarioActual.numeroControl });
     const container = document.getElementById('mensajesListContainer');
-    
+
     if (mensajes.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-envelope-open"></i><p>No tienes mensajes</p></div>';
         return;
     }
-    
+
+    // Guardar el ID del mensaje seleccionado actualmente si existe
+    const activeId = window.selectedMessageId;
+
     container.innerHTML = mensajes.map(m => {
         const remitente = m.de === 'ADMIN' || m.de === 'SISTEMA' ? m.de : obtenerUsuarioPorNumeroControl(m.de)?.nombre || 'Desconocido';
+        const isActive = m.id === activeId ? 'active' : '';
+
         return `
-            <div class="mensaje-item ${m.leido ? '' : 'no-leido'}" onclick="verMensajeDetalleAlumno('${m.id}')">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <strong>${remitente}</strong>
-                    ${!m.leido ? '<span class="badge badge-aprobado" style="font-size: 10px;">Nuevo</span>' : ''}
-                </div>
-                <p style="margin: 5px 0; color: #111827; font-weight: 500;">${m.asunto}</p>
-                <p style="font-size: 13px; color: #6b7280; margin: 5px 0;">${m.contenido.substring(0, 100)}${m.contenido.length > 100 ? '...' : ''}</p>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                    <span style="font-size: 12px; color: #9ca3af;">${formatearFechaHora(m.fecha)}</span>
-                    <span class="badge badge-pendiente" style="font-size: 10px;">${m.categoria}</span>
+            <div class="mensaje-item ${m.leido ? '' : 'no-leido'} ${isActive}" onclick="verMensajeDetalleAlumno('${m.id}')" data-id="${m.id}">
+                <h4>${remitente}</h4>
+                <div class="asunto">${m.asunto}</div>
+                <div class="meta">
+                    <span>${formatearFechaHora(m.fecha)}</span>
+                    <span class="badge badge-pendiente">${m.categoria}</span>
                 </div>
             </div>
         `;
     }).join('');
-    
+
     actualizarBadgeMensajesAlumno();
 }
 
 function verMensajeDetalleAlumno(mensajeId) {
     const mensaje = obtenerConversacion(mensajeId);
     marcarMensajeLeido(mensajeId);
-    
+    window.selectedMessageId = mensajeId;
+
+    // Actualizar clase activa en la lista
+    document.querySelectorAll('.mensaje-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-id') === mensajeId) {
+            item.classList.add('active');
+            item.classList.remove('no-leido');
+        }
+    });
+
     const remitente = mensaje.de === 'ADMIN' || mensaje.de === 'SISTEMA' ? mensaje.de : obtenerUsuarioPorNumeroControl(mensaje.de)?.nombre || 'Desconocido';
-    
+    const usuarioActual = obtenerUsuarioActual();
+
     const container = document.getElementById('mensajeDetalleContainer');
     container.innerHTML = `
-        <div>
-            <div style="margin-bottom: 20px;">
-                <button class="btn-secondary" style="font-size: 13px;" onclick="cargarMensajesAlumno(); document.getElementById('mensajeDetalleContainer').innerHTML = '<div class=\\'empty-state\\'><i class=\\'fas fa-envelope-open\\'></i><p>Selecciona un mensaje para ver los detalles</p></div>'">
-                    <i class="fas fa-arrow-left"></i> Volver
-                </button>
+        <div class="mensaje-detalle-header">
+            <div class="flex-between">
+                <div>
+                    <h3>${mensaje.asunto}</h3>
+                    <p class="text-secondary mt-10">
+                        <strong>De:</strong> ${remitente} | ${formatearFechaHora(mensaje.fecha)}
+                    </p>
+                </div>
+                <span class="badge badge-pendiente">${mensaje.categoria}</span>
+            </div>
+        </div>
+        
+        <div class="chat-thread">
+            <!-- Mensaje Original -->
+            <div class="msg-bubble received">
+                <div class="msg-meta">${remitente}</div>
+                <div class="msg-content">${sanitizarTexto(mensaje.contenido).replace(/\n/g, '<br>')}</div>
+                <div class="msg-date">${formatearFechaHora(mensaje.fecha)}</div>
             </div>
             
-            <h3>${mensaje.asunto}</h3>
-            <p style="color: #6b7280; margin: 10px 0;">
-                <strong>De:</strong> ${remitente} | ${formatearFechaHora(mensaje.fecha)}
-            </p>
-            
-            <div style="padding: 20px; background: #f3f4f6; border-radius: 8px; margin: 20px 0;">
-                ${sanitizarTexto(mensaje.contenido).replace(/\n/g, '<br>')}
-            </div>
-            
-            ${mensaje.respuestas && mensaje.respuestas.length > 0 ? `
-                <h4 style="margin: 30px 0 15px 0;">Conversación:</h4>
-                ${mensaje.respuestas.map(r => `
-                    <div style="padding: 15px; margin: 10px 0; background: ${r.de === obtenerUsuarioActual().numeroControl ? '#dbeafe' : '#e5e7eb'}; border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <strong>${r.nombreDe}</strong>
-                            <span style="font-size: 12px; color: #6b7280;">${formatearFechaHora(r.fecha)}</span>
-                        </div>
-                        <p>${sanitizarTexto(r.contenido).replace(/\n/g, '<br>')}</p>
-                    </div>
-                `).join('')}
-            ` : ''}
-            
-            <div style="margin-top: 30px;">
-                <h4 style="margin-bottom: 10px;">Responder:</h4>
-                <textarea id="respuestaMensajeAlumno" placeholder="Escribe tu respuesta..." style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; min-height: 120px; font-family: inherit; resize: vertical;"></textarea>
-                <button class="btn-primary" style="margin-top: 10px;" onclick="enviarRespuestaMensajeAlumno('${mensajeId}')">
+            <!-- Respuestas -->
+            ${(mensaje.respuestas || []).map(r => `
+                <div class="msg-bubble ${r.de === usuarioActual.numeroControl ? 'sent' : 'received'}">
+                    <div class="msg-meta">${r.nombreDe}</div>
+                    <div class="msg-content">${sanitizarTexto(r.contenido).replace(/\n/g, '<br>')}</div>
+                    <div class="msg-date">${formatearFechaHora(r.fecha)}</div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="reply-container">
+            <h4>Escribir respuesta</h4>
+            <textarea id="respuestaMensajeAlumno" class="reply-textarea" placeholder="Escribe tu respuesta aquí..."></textarea>
+            <div class="mt-20 flex-right">
+                <button class="btn-primary" onclick="enviarRespuestaMensajeAlumno('${mensajeId}')">
                     <i class="fas fa-paper-plane"></i> Enviar Respuesta
                 </button>
             </div>
         </div>
     `;
-    
+
     actualizarBadgeMensajesAlumno();
 }
 
 function enviarRespuestaMensajeAlumno(mensajeId) {
     const contenido = document.getElementById('respuestaMensajeAlumno').value;
-    
+
     if (!contenido.trim()) {
         mostrarToast('Escribe un mensaje', 'error');
         return;
     }
-    
+
     const resultado = responderMensaje(mensajeId, contenido);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         verMensajeDetalleAlumno(mensajeId);
@@ -695,7 +735,7 @@ function mostrarModalNuevoMensajeAlumno() {
             </div>
         </form>
     `;
-    
+
     crearModal('Nuevo Mensaje', contenido, [
         {
             texto: 'Cancelar',
@@ -715,10 +755,10 @@ function enviarNuevoMensajeAlumnoForm() {
     const asunto = document.getElementById('mensajeAsuntoAlumno').value;
     const contenido = document.getElementById('mensajeContenidoAlumno').value;
     const categoria = document.getElementById('mensajeCategoriaAlumno').value;
-    
+
     const usuarioActual = obtenerUsuarioActual();
     const resultado = crearMensaje(usuarioActual.numeroControl, 'ADMIN', asunto, contenido, categoria);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
@@ -732,7 +772,7 @@ function actualizarBadgeMensajesAlumno() {
     const usuarioActual = obtenerUsuarioActual();
     const count = contarMensajesNoLeidos(usuarioActual.numeroControl);
     const badge = document.getElementById('mensajesBadge');
-    
+
     if (badge) {
         badge.textContent = count;
         badge.style.display = count > 0 ? 'inline-block' : 'none';

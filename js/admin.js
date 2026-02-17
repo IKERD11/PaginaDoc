@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Evitar inicialización multiple
     if (adminInitialized) return;
     adminInitialized = true;
-    
+
     // Verificar autenticación y rol
     const usuario = verificarAutenticacion();
     if (!usuario || usuario.rol !== 'admin') {
@@ -14,16 +14,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await cerrarSesionFirebase();
         return;
     }
-    
+
     const usuarioActual = obtenerUsuarioActual();
     document.getElementById('adminName').textContent = usuarioActual.nombre;
-    
+
     // Inicializar componentes
     inicializarNavegacion();
     inicializarEventos();
     await cargarDashboard();
     await actualizarBadgeMensajes();
-    
+
     // Actualizar datos periódicamente
     setInterval(async () => {
         await actualizarEstadisticas();
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Inicializar navegación del sidebar
 function inicializarNavegacion() {
     const menuItems = document.querySelectorAll('.menu-item');
-    
+
     menuItems.forEach(item => {
         item.addEventListener('click', () => {
             const seccion = item.getAttribute('data-section');
@@ -50,13 +50,13 @@ async function navegarASeccion(seccion) {
         item.classList.remove('active');
     });
     document.querySelector(`[data-section="${seccion}"]`).classList.add('active');
-    
+
     // Mostrar sección correspondiente
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
     document.getElementById(`${seccion}-section`).classList.add('active');
-    
+
     // Cargar datos de la sección
     switch (seccion) {
         case 'dashboard':
@@ -89,17 +89,17 @@ function inicializarEventos() {
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         await cerrarSesionFirebase();
     });
-    
+
     // Tabs de configuración
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const tab = btn.getAttribute('data-tab');
-            
+
             // Actualizar botones activos
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             // Mostrar contenido correspondiente
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
@@ -121,13 +121,13 @@ function inicializarEventos() {
 // ===== DASHBOARD =====
 function cargarDashboard() {
     actualizarEstadisticas();
-    cargarGraficasChboard();
+    cargarGraficasDashboard();
     cargarCitasProximas();
 }
 
 function actualizarEstadisticas() {
     const stats = obtenerEstadisticas();
-    
+
     document.getElementById('totalAlumnos').textContent = stats.totalAlumnos;
     document.getElementById('alumnosCompletos').textContent = stats.alumnosCompletos;
     document.getElementById('documentosPendientes').textContent = stats.documentosPendientes;
@@ -142,12 +142,12 @@ function cargarGraficasDashboard() {
 function cargarCitasProximas() {
     const citas = obtenerProximasCitas(10);
     const container = document.getElementById('citasSemana');
-    
+
     if (citas.length === 0) {
         container.innerHTML = '<p class="text-center" style="color: #6b7280;">No hay citas programadas</p>';
         return;
     }
-    
+
     container.innerHTML = citas.map(cita => `
         <div class="cita-item" style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
             <strong>${cita.nombreAlumno}</strong>
@@ -163,12 +163,12 @@ function cargarCitasProximas() {
 function cargarAlumnos() {
     const alumnos = obtenerUsuarios({ rol: 'alumno' });
     const tbody = document.getElementById('alumnosTableBody');
-    
+
     if (alumnos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay alumnos registrados</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = alumnos.map(alumno => {
         const estado = obtenerEstadoDocumentacion(alumno.numeroControl);
         return `
@@ -191,7 +191,7 @@ function cargarAlumnos() {
             </tr>
         `;
     }).join('');
-    
+
     // Filtros
     document.getElementById('searchAlumno').addEventListener('input', filtrarAlumnos);
     document.getElementById('filterEstado').addEventListener('change', filtrarAlumnos);
@@ -200,16 +200,16 @@ function cargarAlumnos() {
 function filtrarAlumnos() {
     const busqueda = document.getElementById('searchAlumno').value.toLowerCase();
     const estado = document.getElementById('filterEstado').value;
-    
+
     let alumnos = obtenerUsuarios({ rol: 'alumno' });
-    
+
     if (busqueda) {
-        alumnos = alumnos.filter(a => 
+        alumnos = alumnos.filter(a =>
             a.nombre.toLowerCase().includes(busqueda) ||
             a.numeroControl.toLowerCase().includes(busqueda)
         );
     }
-    
+
     if (estado) {
         alumnos = alumnos.filter(a => {
             const estadoDoc = obtenerEstadoDocumentacion(a.numeroControl);
@@ -219,7 +219,7 @@ function filtrarAlumnos() {
             return true;
         });
     }
-    
+
     const tbody = document.getElementById('alumnosTableBody');
     tbody.innerHTML = alumnos.map(alumno => {
         const estadoDoc = obtenerEstadoDocumentacion(alumno.numeroControl);
@@ -249,7 +249,7 @@ function verDetalleAlumno(numeroControl) {
     const alumno = obtenerUsuarioPorNumeroControl(numeroControl);
     const documentos = obtenerDocumentosAlumno(numeroControl);
     const citas = obtenerCitas({ numeroControl });
-    
+
     const contenido = `
         <div style="padding: 20px;">
             <h4>${alumno.nombre}</h4>
@@ -274,7 +274,7 @@ function verDetalleAlumno(numeroControl) {
             ` : ''}
         </div>
     `;
-    
+
     crearModal(`Detalle de ${alumno.nombre}`, contenido, [
         {
             texto: 'Cerrar',
@@ -305,7 +305,7 @@ function mostrarModalNuevoAlumno() {
             </div>
         </form>
     `;
-    
+
     crearModal('Nuevo Alumno', contenido, [
         {
             texto: 'Cancelar',
@@ -326,7 +326,7 @@ function crearNuevoAlumno() {
     const nombre = document.getElementById('nuevoNombre').value;
     const email = document.getElementById('nuevoEmail').value;
     const nip = document.getElementById('nuevoNip').value;
-    
+
     const resultado = crearUsuario({
         numeroControl,
         nombre,
@@ -334,7 +334,7 @@ function crearNuevoAlumno() {
         nip,
         rol: 'alumno'
     });
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
@@ -349,90 +349,154 @@ function cargarDocumentosRevision() {
     // Poblar select de alumnos
     const alumnos = obtenerUsuarios({ rol: 'alumno' });
     const selectAlumno = document.getElementById('filterAlumnoDocumentos');
-    
+
     selectAlumno.innerHTML = '<option value="">Todos los alumnos</option>' +
         alumnos.map(a => `<option value="${a.numeroControl}">${a.nombre} - ${a.numeroControl}</option>`).join('');
-    
+
     // Eventos de filtros
     selectAlumno.addEventListener('change', filtrarDocumentosRevision);
     document.getElementById('filterEstadoDocumento').addEventListener('change', filtrarDocumentosRevision);
-    
+
     // Evento de búsqueda por nombre o número de control
     const searchDocumento = document.getElementById('searchDocumento');
     if (searchDocumento) {
         searchDocumento.addEventListener('input', filtrarDocumentosRevision);
     }
-    
+
     // Cargar todos los documentos
     mostrarDocumentosRevision();
 }
 
-function filtrarDocumentosRevision() {
-    mostrarDocumentosRevision();
+async function filtrarDocumentosRevision() {
+    await mostrarDocumentosRevision();
 }
 
-function mostrarDocumentosRevision() {
-    const numeroControl = document.getElementById('filterAlumnoDocumentos').value;
+async function mostrarDocumentosRevision() {
+    const numeroControlSelect = document.getElementById('filterAlumnoDocumentos').value;
     const estado = document.getElementById('filterEstadoDocumento').value;
     const busqueda = document.getElementById('searchDocumento').value.toLowerCase().trim();
-    
-    let documentos = obtenerDocumentos();
-    
-    if (numeroControl) {
-        documentos = documentos.filter(d => d.numeroControl === numeroControl);
+
+    // Si hay una búsqueda exacta o un alumno seleccionado, mostrar el expediente
+    if (busqueda && busqueda.length >= 4) {
+        const alumno = buscarAlumnoPorCriterio(busqueda);
+        if (alumno) {
+            await mostrarExpedienteAlumno(alumno, estado);
+            return;
+        }
     }
-    
+
+    if (numeroControlSelect) {
+        const alumno = obtenerUsuarioPorNumeroControl(numeroControlSelect);
+        if (alumno) {
+            await mostrarExpedienteAlumno(alumno, estado);
+            return;
+        }
+    }
+
+    let documentos = await obtenerDocumentos();
+
+    // Filtrar documentos antes de agrupar
+    if (numeroControlSelect) {
+        documentos = documentos.filter(d => d.numeroControl === numeroControlSelect);
+    }
     if (estado) {
         documentos = documentos.filter(d => d.estado === estado);
     }
-    
-    // Filtro de búsqueda por nombre o número de control
     if (busqueda) {
         documentos = documentos.filter(d => {
             const alumno = obtenerUsuarioPorNumeroControl(d.numeroControl);
             const nombre = alumno ? alumno.nombre.toLowerCase() : '';
             const numControl = d.numeroControl.toLowerCase();
-            return nombre.includes(busqueda) || numControl.includes(busqueda);
+            const email = alumno ? alumno.email.toLowerCase() : '';
+            return nombre.includes(busqueda) || numControl.includes(busqueda) || email.includes(busqueda);
         });
     }
-    
+
     const container = document.getElementById('documentosContainer');
-    
+
     if (documentos.length === 0) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p>No hay documentos que mostrar</p></div>';
+        container.innerHTML = `
+            <div class="empty-state fade-in">
+                <i class="fas fa-search" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                <p>No se encontraron alumnos o documentos con esos criterios</p>
+                ${busqueda ? `<button class="btn-secondary" style="margin-top: 15px;" onclick="limpiarBusquedaExpediente()">Limpiar búsqueda</button>` : ''}
+            </div>
+        `;
         return;
     }
-    
-    container.innerHTML = documentos.map(doc => {
-        const alumno = obtenerUsuarioPorNumeroControl(doc.numeroControl);
+
+    // AGRUPAR POR ALUMNO
+    const grupos = {};
+    documentos.forEach(doc => {
+        if (!grupos[doc.numeroControl]) {
+            grupos[doc.numeroControl] = [];
+        }
+        grupos[doc.numeroControl].push(doc);
+    });
+
+    container.innerHTML = Object.keys(grupos).map(numControl => {
+        const docs = grupos[numControl];
+        const alumno = obtenerUsuarioPorNumeroControl(numControl) || { nombre: 'Desconocido', numeroControl: numControl };
+
+        const total = docs.length;
+        const aprobados = docs.filter(d => d.estado === 'aprobado').length;
+        const pendientes = docs.filter(d => d.estado === 'pendiente').length;
+        // Calcular porcentaje basado en documentos aprobados vs el total requerido (asumimos 6 si no hay más info)
+        const totalRequeridos = (typeof CONFIG !== 'undefined' && CONFIG.DOCUMENTOS_REQUERIDOS) ? CONFIG.DOCUMENTOS_REQUERIDOS.length : 6;
+        const porcentaje = Math.round((aprobados / totalRequeridos) * 100);
+
+        const tienePendientes = pendientes > 0;
+
         return `
-            <div class="documento-card">
-                <div class="documento-card-header">
-                    <div>
-                        <h4>${doc.tipoDocumento}</h4>
-                        <p style="font-size: 13px; color: rgba(255, 255, 255, 0.75);">${alumno ? alumno.nombre : doc.numeroControl}</p>
+            <div class="alumno-summary-card fade-in" onclick="mostrarExpedienteAlumno({numeroControl: '${numControl}', nombre: '${alumno.nombre}', email: '${alumno.email || ''}'}, '${estado}')">
+                <div class="summary-header">
+                    <div class="summary-user-node">
+                        <div class="summary-avatar">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="summary-user-text">
+                            <h3>${alumno.nombre}</h3>
+                            <span>${numControl}</span>
+                        </div>
                     </div>
-                    ${obtenerBadgeEstado(doc.estado)}
+                    <div class="summary-chevron">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
                 </div>
-                <p style="font-size: 13px; color: rgba(255, 255, 255, 0.75); margin: 10px 0;">
-                    <i class="fas fa-calendar"></i> ${formatearFechaHora(doc.fechaCarga)}
-                </p>
-                ${doc.observaciones ? `<p style="font-size: 13px;"><strong>Observaciones:</strong> ${doc.observaciones}</p>` : ''}
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn-primary" style="flex: 1; font-size: 12px;" onclick="verVistaPrevia('${doc.id}')">
-                        <i class="fas fa-eye"></i> Ver
-                    </button>
-                    <button class="btn-secondary" style="flex: 1; font-size: 12px;" onclick="descargarDocumento('${doc.id}')">
-                        <i class="fas fa-download"></i> Descargar
-                    </button>
-                    ${doc.estado === 'pendiente' ? `
-                        <button class="btn-success" style="flex: 1; font-size: 12px;" onclick="aprobarDocumento('${doc.id}')">
-                            <i class="fas fa-check"></i> Aprobar
-                        </button>
-                        <button class="btn-danger" style="flex: 1; font-size: 12px;" onclick="rechazarDocumento('${doc.id}')">
-                            <i class="fas fa-times"></i> Rechazar
-                        </button>
-                    ` : ''}
+
+                <div class="summary-stats-grid">
+                    <div class="summary-stat-item">
+                        <span class="summary-stat-value">${total}</span>
+                        <span class="summary-stat-label">Total</span>
+                    </div>
+                    <div class="summary-stat-item">
+                        <span class="summary-stat-value" style="color: #34d399;">${aprobados}</span>
+                        <span class="summary-stat-label">Aprobados</span>
+                    </div>
+                    <div class="summary-stat-item">
+                        <span class="summary-stat-value" style="color: #f59e0b;">${pendientes}</span>
+                        <span class="summary-stat-label">Pendientes</span>
+                    </div>
+                </div>
+
+                <div class="summary-footer">
+                    <div class="summary-progress-wrapper">
+                        <div class="summary-progress-bar">
+                            <div class="summary-progress-fill" style="width: ${porcentaje}%"></div>
+                        </div>
+                    </div>
+                    <div class="summary-status-row">
+                        <span class="progreso-text">Progreso: ${porcentaje}%</span>
+                        ${tienePendientes ? `
+                            <div class="badge-resumen-pendiente">
+                                <i class="fas fa-clock"></i> REVISIÓN PENDIENTE
+                            </div>
+                        ` : `
+                            <div class="badge-resumen-pendiente" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
+                                <i class="fas fa-check-circle"></i> REVISADO
+                            </div>
+                        `}
+                    </div>
                 </div>
             </div>
         `;
@@ -443,60 +507,109 @@ function aprobarDocumento(documentoId) {
     confirmar(
         'Aprobar Documento',
         '¿Estás seguro de que deseas aprobar este documento?',
-        () => {
-            const resultado = revisarDocumento(documentoId, 'aprobado');
+        async () => {
+            const resultado = await revisarDocumento(documentoId, 'aprobado');
             if (resultado.exito) {
-                mostrarToast(resultado.mensaje, 'success');
-                mostrarDocumentosRevision();
-                actualizarEstadisticas();
+                mostrarToast('Documento aprobado con éxito', 'success');
+                await mostrarDocumentosRevision();
+                if (typeof actualizarEstadisticas === 'function') await actualizarEstadisticas();
             } else {
-                mostrarToast(resultado.mensaje, 'error');
+                mostrarToast(resultado.mensaje || 'Error al aprobar documento', 'error');
             }
         }
     );
 }
 
 function rechazarDocumento(documentoId) {
-    const contenido = `
-        <form id="formRechazarDoc">
-            <div class="form-group">
-                <label>Observaciones (obligatorio) *</label>
-                <textarea id="observacionesRechazo" required placeholder="Explica el motivo del rechazo..."></textarea>
-            </div>
-        </form>
-    `;
-    
-    crearModal('Rechazar Documento', contenido, [
-        {
-            texto: 'Cancelar',
-            tipo: 'secondary',
-            onclick: 'cerrarModal()'
-        },
-        {
-            texto: 'Rechazar',
-            tipo: 'danger',
-            icono: 'times',
-            onclick: `ejecutarRechazo('${documentoId}')`
-        }
-    ]);
+    mostrarSeccionRechazo(documentoId);
 }
 
-function ejecutarRechazo(documentoId) {
-    const observaciones = document.getElementById('observacionesRechazo').value;
-    
+function mostrarSeccionRechazo(documentoId) {
+    const container = document.getElementById(`rechazo-container-${documentoId}`);
+    const buttons = document.getElementById(`buttons-${documentoId}`);
+
+    if (container) {
+        container.style.display = 'block';
+        if (buttons) buttons.style.display = 'none';
+
+        // Focus textarea
+        const textarea = document.getElementById(`obs-${documentoId}`);
+        if (textarea) textarea.focus();
+    } else {
+        // Fallback al modal si no estamos en la vista de expediente/lista agrupada
+        const contenido = `
+            <form id="formRechazarDoc">
+                <div class="form-group">
+                    <label>Observaciones (obligatorio) *</label>
+                    <textarea id="observacionesRechazo" required placeholder="Explica el motivo del rechazo..."></textarea>
+                </div>
+            </form>
+        `;
+
+        crearModal('Rechazar Documento', contenido, [
+            {
+                texto: 'Cancelar',
+                tipo: 'secondary',
+                onclick: 'cerrarModal()'
+            },
+            {
+                texto: 'Rechazar',
+                tipo: 'danger',
+                icono: 'times',
+                onclick: `ejecutarRechazo('${documentoId}')`
+            }
+        ]);
+    }
+}
+
+function cancelarRechazo(documentoId) {
+    const container = document.getElementById(`rechazo-container-${documentoId}`);
+    const buttons = document.getElementById(`buttons-${documentoId}`);
+
+    if (container) {
+        container.style.display = 'none';
+        if (buttons) buttons.style.display = 'flex';
+
+        // Limpiar textarea
+        const textarea = document.getElementById(`obs-${documentoId}`);
+        if (textarea) textarea.value = '';
+    }
+}
+
+async function confirmarRechazo(documentoId) {
+    const observaciones = document.getElementById(`obs-${documentoId}`).value;
+
     if (!observaciones.trim()) {
         mostrarToast('Las observaciones son obligatorias', 'error');
         return;
     }
-    
-    const resultado = revisarDocumento(documentoId, 'rechazado', observaciones);
+
+    const resultado = await revisarDocumento(documentoId, 'rechazado', observaciones);
     if (resultado.exito) {
-        mostrarToast(resultado.mensaje, 'success');
-        cerrarModal();
-        mostrarDocumentosRevision();
-        actualizarEstadisticas();
+        mostrarToast('Documento rechazado con éxito', 'success');
+        await mostrarDocumentosRevision();
+        if (typeof actualizarEstadisticas === 'function') await actualizarEstadisticas();
     } else {
-        mostrarToast(resultado.mensaje, 'error');
+        mostrarToast(resultado.mensaje || 'Error al rechazar documento', 'error');
+    }
+}
+
+async function ejecutarRechazo(documentoId) {
+    const observaciones = document.getElementById('observacionesRechazo').value;
+
+    if (!observaciones.trim()) {
+        mostrarToast('Las observaciones son obligatorias', 'error');
+        return;
+    }
+
+    const resultado = await revisarDocumento(documentoId, 'rechazado', observaciones);
+    if (resultado.exito) {
+        mostrarToast('Documento rechazado con éxito', 'success');
+        cerrarModal();
+        await mostrarDocumentosRevision();
+        if (typeof actualizarEstadisticas === 'function') await actualizarEstadisticas();
+    } else {
+        mostrarToast(resultado.mensaje || 'Error al rechazar documento', 'error');
     }
 }
 
@@ -509,12 +622,12 @@ function cargarCitas() {
 function cargarProximasCitasAdmin() {
     const citas = obtenerProximasCitas(20);
     const container = document.getElementById('citasList');
-    
+
     if (citas.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No hay citas próximas</p></div>';
         return;
     }
-    
+
     container.innerHTML = citas.map(cita => `
         <div class="cita-card" style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
             <div style="display: flex; justify-content: space-between; align-items: start;">
@@ -552,12 +665,12 @@ function cargarProximasCitasAdmin() {
 
 function mostrarModalNuevaCita() {
     const alumnos = obtenerUsuarios({ rol: 'alumno' }).filter(a => validarDocumentacionCompleta(a.numeroControl));
-    
+
     if (alumnos.length === 0) {
         mostrarToast('No hay alumnos con documentación completa para agendar citas', 'warning');
         return;
     }
-    
+
     const contenido = `
         <form id="formNuevaCita">
             <div class="form-group">
@@ -577,7 +690,7 @@ function mostrarModalNuevaCita() {
             </div>
         </form>
     `;
-    
+
     crearModal('Agendar Nueva Cita', contenido, [
         {
             texto: 'Cancelar',
@@ -597,9 +710,9 @@ function crearNuevaCitaAdmin() {
     const numeroControl = document.getElementById('citaAlumno').value;
     const fecha = document.getElementById('citaFecha').value;
     const hora = document.getElementById('citaHora').value;
-    
+
     const resultado = crearCita(numeroControl, fecha, hora);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
@@ -614,19 +727,26 @@ function crearNuevaCitaAdmin() {
 function cargarMensajesAdmin() {
     const mensajes = obtenerMensajes({ numeroControl: 'ADMIN' });
     const container = document.getElementById('mensajesListContainer');
-    
+
     if (mensajes.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-envelope-open"></i><p>No tienes mensajes</p></div>';
         return;
     }
-    
+
+    const activeId = window.selectedMessageId;
+
     container.innerHTML = mensajes.map(m => {
         const remitente = obtenerUsuarioPorNumeroControl(m.de);
+        const isActive = m.id === activeId ? 'active' : '';
+
         return `
-            <div class="mensaje-item ${m.leido ? '' : 'no-leido'}" onclick="verMensajeDetalle('${m.id}')">
-                <strong>${remitente ? remitente.nombre : 'Sistema'}</strong>
-                <p>${m.asunto}</p>
-                <span style="font-size: 12px; color: #9ca3af;">${formatearFechaHora(m.fecha)}</span>
+            <div class="mensaje-item ${m.leido ? '' : 'no-leido'} ${isActive}" onclick="verMensajeDetalle('${m.id}')" data-id="${m.id}">
+                <h4>${remitente ? remitente.nombre : 'Sistema'}</h4>
+                <div class="asunto">${m.asunto}</div>
+                <div class="meta">
+                    <span>${formatearFechaHora(m.fecha)}</span>
+                    <span class="badge badge-pendiente">${m.categoria || 'General'}</span>
+                </div>
             </div>
         `;
     }).join('');
@@ -635,54 +755,76 @@ function cargarMensajesAdmin() {
 function verMensajeDetalle(mensajeId) {
     const mensaje = obtenerConversacion(mensajeId);
     marcarMensajeLeido(mensajeId);
-    
+    window.selectedMessageId = mensajeId;
+
+    // Actualizar clase activa
+    document.querySelectorAll('.mensaje-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-id') === mensajeId) {
+            item.classList.add('active');
+            item.classList.remove('no-leido');
+        }
+    });
+
     const remitente = obtenerUsuarioPorNumeroControl(mensaje.de);
-    
+    const usuarioActual = obtenerUsuarioActual();
+
     const container = document.getElementById('mensajeDetalleContainer');
     container.innerHTML = `
-        <div>
-            <h3>${mensaje.asunto}</h3>
-            <p style="color: #6b7280; margin: 10px 0;">
-                De: ${remitente ? remitente.nombre : 'Sistema'} - ${formatearFechaHora(mensaje.fecha)}
-            </p>
-            <div style="padding: 20px; background: #f3f4f6; border-radius: 8px;">
-                ${sanitizarTexto(mensaje.contenido)}
+        <div class="mensaje-detalle-header">
+            <div class="flex-between">
+                <div>
+                    <h3>${mensaje.asunto}</h3>
+                    <p class="text-secondary mt-10">
+                        <strong>De:</strong> ${remitente ? remitente.nombre : 'Sistema'} | ${formatearFechaHora(mensaje.fecha)}
+                    </p>
+                </div>
+                <span class="badge badge-pendiente">${mensaje.categoria || 'General'}</span>
+            </div>
+        </div>
+        
+        <div class="chat-thread">
+            <!-- Mensaje Original -->
+            <div class="msg-bubble received">
+                <div class="msg-meta">${remitente ? remitente.nombre : 'Sistema'}</div>
+                <div class="msg-content">${sanitizarTexto(mensaje.contenido).replace(/\n/g, '<br>')}</div>
+                <div class="msg-date">${formatearFechaHora(mensaje.fecha)}</div>
             </div>
             
-            ${mensaje.respuestas && mensaje.respuestas.length > 0 ? `
-                <h4 style="margin-top: 20px;">Conversación:</h4>
-                ${mensaje.respuestas.map(r => `
-                    <div style="padding: 15px; margin: 10px 0; background: #e5e7eb; border-radius: 8px;">
-                        <strong>${r.nombreDe}</strong>
-                        <span style="font-size: 12px; color: #6b7280;"> - ${formatearFechaHora(r.fecha)}</span>
-                        <p style="margin-top: 10px;">${sanitizarTexto(r.contenido)}</p>
-                    </div>
-                `).join('')}
-            ` : ''}
-            
-            <div style="margin-top: 20px;">
-                <h4>Responder:</h4>
-                <textarea id="respuestaMensaje" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; min-height: 100px;"></textarea>
-                <button class="btn-primary" style="margin-top: 10px;" onclick="enviarRespuestaMensaje('${mensajeId}')">
+            <!-- Respuestas -->
+            ${(mensaje.respuestas || []).map(r => `
+                <div class="msg-bubble ${r.de === usuarioActual.numeroControl ? 'sent' : 'received'}">
+                    <div class="msg-meta">${r.nombreDe}</div>
+                    <div class="msg-content">${sanitizarTexto(r.contenido).replace(/\n/g, '<br>')}</div>
+                    <div class="msg-date">${formatearFechaHora(r.fecha)}</div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="reply-container">
+            <h4>Escribir respuesta</h4>
+            <textarea id="respuestaMensaje" class="reply-textarea" placeholder="Escribe tu respuesta aquí..."></textarea>
+            <div class="mt-20 flex-right">
+                <button class="btn-primary" onclick="enviarRespuestaMensaje('${mensajeId}')">
                     <i class="fas fa-paper-plane"></i> Enviar Respuesta
                 </button>
             </div>
         </div>
     `;
-    
+
     actualizarBadgeMensajes();
 }
 
 function enviarRespuestaMensaje(mensajeId) {
     const contenido = document.getElementById('respuestaMensaje').value;
-    
+
     if (!contenido.trim()) {
         mostrarToast('Escribe un mensaje', 'error');
         return;
     }
-    
+
     const resultado = responderMensaje(mensajeId, contenido);
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         verMensajeDetalle(mensajeId);
@@ -693,7 +835,7 @@ function enviarRespuestaMensaje(mensajeId) {
 
 function mostrarModalNuevoMensaje() {
     const alumnos = obtenerUsuarios({ rol: 'alumno' });
-    
+
     const contenido = `
         <form id="formNuevoMensaje">
             <div class="form-group">
@@ -722,7 +864,7 @@ function mostrarModalNuevoMensaje() {
             </div>
         </form>
     `;
-    
+
     crearModal('Nuevo Mensaje', contenido, [
         {
             texto: 'Cancelar',
@@ -743,17 +885,17 @@ function enviarNuevoMensajeAdmin() {
     const asunto = document.getElementById('mensajeAsunto').value;
     const contenido = document.getElementById('mensajeContenido').value;
     const categoria = document.getElementById('mensajeCategoria').value;
-    
+
     const usuarioActual = obtenerUsuarioActual();
-    
+
     let resultado;
-    
+
     if (destinatario === 'TODOS') {
         resultado = enviarMensajeMasivo(asunto, contenido);
     } else {
         resultado = crearMensaje(usuarioActual.numeroControl, destinatario, asunto, contenido, categoria);
     }
-    
+
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
@@ -780,7 +922,7 @@ function cargarReportes() {
     const hoy = new Date().toISOString().split('T')[0];
     const hace30Dias = new Date();
     hace30Dias.setDate(hace30Dias.getDate() - 30);
-    
+
     document.getElementById('fechaInicio').value = hace30Dias.toISOString().split('T')[0];
     document.getElementById('fechaFin').value = hoy;
 }
@@ -789,9 +931,9 @@ function generarReporteSeleccionado() {
     const tipo = document.getElementById('tipoReporte').value;
     const fechaInicio = document.getElementById('fechaInicio').value;
     const fechaFin = document.getElementById('fechaFin').value;
-    
+
     let reporte;
-    
+
     switch (tipo) {
         case 'general':
             reporte = generarReporteGeneral(fechaInicio, fechaFin);
@@ -806,27 +948,27 @@ function generarReporteSeleccionado() {
             reporte = generarReporteAlumnos();
             break;
     }
-    
+
     reporteActual = reporte;
     mostrarReporte(reporte);
 }
 
 function mostrarReporte(reporte) {
     const container = document.getElementById('reporteContainer');
-    
+
     let html = `
         <div class="reporte-generado">
             <h3>Reporte ${reporte.tipo.toUpperCase()}</h3>
             <p>Generado: ${formatearFechaHora(reporte.fechaGeneracion)}</p>
     `;
-    
+
     if (reporte.fechaInicio || reporte.fechaFin) {
         html += `<p>Periodo: ${formatearFecha(reporte.fechaInicio)} - ${formatearFecha(reporte.fechaFin)}</p>`;
     }
-    
+
     // Agregar estadísticas
     html += '<div class="stats-grid">';
-    
+
     switch (reporte.tipo) {
         case 'documentos':
             html += `
@@ -850,7 +992,7 @@ function mostrarReporte(reporte) {
             `;
             break;
     }
-    
+
     html += '</div></div>';
     container.innerHTML = html;
 }
@@ -882,17 +1024,27 @@ function cargarConfiguracion() {
 function cargarDocumentosRequeridos() {
     const documentos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
     const container = document.getElementById('documentosRequeridos');
-    
+
     container.innerHTML = documentos.map(doc => `
-        <div style="padding: 15px; background: #f3f4f6; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <strong>${doc.nombre}</strong>
-                <p style="font-size: 13px; color: #6b7280;">${doc.descripcion}</p>
-                ${doc.obligatorio ? '<span class="badge badge-aprobado">Obligatorio</span>' : ''}
+        <div class="doc-req-card fade-in">
+            <div class="doc-req-icon">
+                <i class="fas fa-file-alt"></i>
             </div>
-            <button class="btn-danger" style="font-size: 12px;" onclick="eliminarDocumentoRequerido('${doc.id}')">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div class="doc-req-content">
+                <div class="doc-req-header">
+                    <h4>${doc.nombre}</h4>
+                    ${doc.obligatorio ? '<span class="badge badge-aprobado">OBLIGATORIO</span>' : '<span class="badge badge-pendiente">OPCIONAL</span>'}
+                </div>
+                <p>${doc.descripcion}</p>
+                <div class="doc-req-meta">
+                    <span class="meta-item"><i class="fas fa-fingerprint"></i> ID: ${doc.id}</span>
+                </div>
+            </div>
+            <div class="doc-actions">
+                <button class="btn-icon btn-delete" onclick="eliminarDocumentoRequerido('${doc.id}')" title="Eliminar documento">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         </div>
     `).join('');
 }
@@ -901,25 +1053,24 @@ function mostrarModalAgregarDocumento() {
     const contenido = `
         <form id="formNuevoDocRequerido">
             <div class="form-group">
-                <label>ID del Documento *</label>
-                <input type="text" id="docReqId" required placeholder="ej: acta_nacimiento">
+                <label><i class="fas fa-id-badge"></i> ID del Documento *</label>
+                <input type="text" id="docReqId" class="filtro-input" required placeholder="ej: acta_nacimiento">
             </div>
             <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" id="docReqNombre" required>
+                <label><i class="fas fa-heading"></i> Nombre *</label>
+                <input type="text" id="docReqNombre" class="filtro-input" required>
             </div>
             <div class="form-group">
-                <label>Descripción *</label>
-                <textarea id="docReqDescripcion" required></textarea>
+                <label><i class="fas fa-align-left"></i> Descripción *</label>
+                <textarea id="docReqDescripcion" class="filtro-input" style="min-height: 80px;" required></textarea>
             </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="docReqObligatorio" checked> Obligatorio
-                </label>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                <input type="checkbox" id="docReqObligatorio" checked style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="docReqObligatorio" style="margin-bottom: 0; cursor: pointer;">Este documento es obligatorio</label>
             </div>
         </form>
     `;
-    
+
     crearModal('Agregar Documento Requerido', contenido, [
         {
             texto: 'Cancelar',
@@ -940,20 +1091,20 @@ function agregarDocumentoRequerido() {
     const nombre = document.getElementById('docReqNombre').value;
     const descripcion = document.getElementById('docReqDescripcion').value;
     const obligatorio = document.getElementById('docReqObligatorio').checked;
-    
+
     const documentos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
-    
+
     // Verificar si ya existe
     if (documentos.find(d => d.id === id)) {
         mostrarToast('Ya existe un documento con este ID', 'error');
         return;
     }
-    
+
     documentos.push({ id, nombre, descripcion, obligatorio });
     localStorage.setItem('documentosRequeridos', JSON.stringify(documentos));
-    
+
     registrarBitacora('configuracion', `Documento requerido agregado: ${nombre}`);
-    
+
     mostrarToast('Documento agregado correctamente', 'success');
     cerrarModal();
     cargarDocumentosRequeridos();
@@ -967,9 +1118,9 @@ function eliminarDocumentoRequerido(id) {
             let documentos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
             documentos = documentos.filter(d => d.id !== id);
             localStorage.setItem('documentosRequeridos', JSON.stringify(documentos));
-            
+
             registrarBitacora('configuracion', `Documento requerido eliminado: ${id}`);
-            
+
             mostrarToast('Documento eliminado', 'success');
             cargarDocumentosRequeridos();
         }
@@ -979,19 +1130,36 @@ function eliminarDocumentoRequerido(id) {
 function cargarUsuariosConfig() {
     const usuarios = obtenerUsuarios();
     const container = document.getElementById('usuariosList');
-    
+
     container.innerHTML = usuarios.map(u => `
-        <div style="padding: 15px; background: #f3f4f6; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <strong>${u.nombre}</strong>
-                <p style="font-size: 13px; color: #6b7280;">${u.numeroControl} - ${u.email}</p>
-                <span class="badge ${u.rol === 'admin' ? 'badge-aprobado' : 'badge-pendiente'}">${u.rol}</span>
+        <div class="user-config-card fade-in">
+            <div class="user-avatar ${u.rol === 'admin' ? 'admin' : 'alumno'}">
+                <i class="fas ${u.rol === 'admin' ? 'fa-user-shield' : 'fa-user-graduate'}"></i>
             </div>
-            ${u.rol !== 'admin' ? `
-                <button class="btn-danger" style="font-size: 12px;" onclick="eliminarUsuarioConfig('${u.numeroControl}')">
-                    <i class="fas fa-trash"></i>
+            
+            <div class="user-info-content">
+                <div class="user-header">
+                    <h4>${u.nombre}</h4>
+                    <span class="badge ${u.rol === 'admin' ? 'badge-aprobado' : 'badge-pendiente'}">${u.rol.toUpperCase()}</span>
+                </div>
+                
+                <div class="user-details">
+                    <span class="user-detail-item">
+                        <i class="fas fa-id-card"></i> ${u.numeroControl}
+                    </span>
+                    <span class="user-detail-item">
+                        <i class="fas fa-envelope"></i> ${u.email}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="user-actions">
+                ${u.rol !== 'admin' ? `
+                <button class="btn-icon btn-delete" onclick="eliminarUsuarioConfig('${u.numeroControl}')" title="Eliminar usuario">
+                    <i class="fas fa-trash-alt"></i>
                 </button>
-            ` : ''}
+                ` : '<div style="width: 40px;"></div>'}
+            </div>
         </div>
     `).join('');
 }
@@ -1011,7 +1179,7 @@ function eliminarUsuarioConfig(numeroControl) {
 function cargarPeriodoConfig() {
     const periodo = JSON.parse(localStorage.getItem('periodo')) || {};
     const config = JSON.parse(localStorage.getItem('configuracion')) || {};
-    
+
     if (periodo.fechaInicio) document.getElementById('fechaInicioPeriodo').value = periodo.fechaInicio;
     if (periodo.fechaFin) document.getElementById('fechaFinPeriodo').value = periodo.fechaFin;
     if (config.maxCitasPorDia) document.getElementById('limiteCitasDia').value = config.maxCitasPorDia;
@@ -1021,26 +1189,26 @@ function guardarConfiguracionPeriodo() {
     const fechaInicio = document.getElementById('fechaInicioPeriodo').value;
     const fechaFin = document.getElementById('fechaFinPeriodo').value;
     const limiteCitas = document.getElementById('limiteCitasDia').value;
-    
+
     const periodo = JSON.parse(localStorage.getItem('periodo')) || {};
     const config = JSON.parse(localStorage.getItem('configuracion')) || {};
-    
+
     periodo.fechaInicio = fechaInicio;
     periodo.fechaFin = fechaFin;
     config.maxCitasPorDia = parseInt(limiteCitas);
-    
+
     localStorage.setItem('periodo', JSON.stringify(periodo));
     localStorage.setItem('configuracion', JSON.stringify(config));
-    
+
     registrarBitacora('configuracion', 'Configuración de periodo actualizada');
-    
+
     mostrarToast('Configuración guardada correctamente', 'success');
 }
 
 function cargarBitacora() {
     const bitacora = obtenerBitacora({}).slice(0, 100); // Solo las últimas 100
     const container = document.getElementById('bitacoraList');
-    
+
     container.innerHTML = bitacora.map(b => `
         <div style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
             <div style="display: flex; justify-content: space-between;">
@@ -1051,19 +1219,20 @@ function cargarBitacora() {
             <span class="badge badge-pendiente">${b.tipo}</span>
         </div>
     `).join('');
-    
+
     // Filtros
     document.getElementById('searchBitacora').addEventListener('input', filtrarBitacora);
     document.getElementById('filterTipoAccion').addEventListener('change', filtrarBitacora);
 }
 
+
 function filtrarBitacora() {
     const busqueda = document.getElementById('searchBitacora').value;
     const tipo = document.getElementById('filterTipoAccion').value;
-    
+
     const bitacora = obtenerBitacora({ tipo, busqueda }).slice(0, 100);
     const container = document.getElementById('bitacoraList');
-    
+
     container.innerHTML = bitacora.map(b => `
         <div style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
             <div style="display: flex; justify-content: space-between;">
@@ -1075,3 +1244,249 @@ function filtrarBitacora() {
         </div>
     `).join('');
 }
+
+// ===== FUNCIONES DE APOYO EXPEDIENTE =====
+// ===== FUNCIONES DE APOYO EXPEDIENTE (PREMIUM) =====
+const getDocIcon = (nombre) => {
+    const n = nombre.toLowerCase();
+    if (n.includes('acta') || n.includes('nacimiento')) return 'fa-file-contract';
+    if (n.includes('curp')) return 'fa-id-card';
+    if (n.includes('certificado') || n.includes('estudios')) return 'fa-graduation-cap';
+    if (n.includes('comprobante') || n.includes('domicilio')) return 'fa-home';
+    if (n.includes('foto') || n.includes('fotografía')) return 'fa-camera';
+    if (n.includes('médico') || n.includes('salud')) return 'fa-heartbeat';
+    return 'fa-file-alt';
+};
+
+const estadoColors = {
+    'aprobado': {
+        bg: 'rgba(16, 185, 129, 0.15)',
+        border: 'rgba(16, 185, 129, 0.4)',
+        icon: 'fa-check-circle',
+        iconColor: '#10b981'
+    },
+    'pendiente': {
+        bg: 'rgba(245, 158, 11, 0.15)',
+        border: 'rgba(245, 158, 11, 0.4)',
+        icon: 'fa-clock',
+        iconColor: '#f59e0b'
+    },
+    'rechazado': {
+        bg: 'rgba(239, 68, 68, 0.15)',
+        border: 'rgba(239, 68, 68, 0.4)',
+        icon: 'fa-times-circle',
+        iconColor: '#ef4444'
+    }
+};
+
+function buscarAlumnoPorCriterio(criterio) {
+    const alumnos = obtenerUsuarios({ rol: 'alumno' });
+    const criterioLower = criterio.toLowerCase().trim();
+
+    // Buscar por número de control exacto
+    let alumno = alumnos.find(a => a.numeroControl.toLowerCase() === criterioLower);
+    if (alumno) return alumno;
+
+    // Buscar por email exacto
+    alumno = alumnos.find(a => a.email.toLowerCase() === criterioLower);
+    if (alumno) return alumno;
+
+    // Buscar por nombre exacto
+    alumno = alumnos.find(a => a.nombre.toLowerCase() === criterioLower);
+
+    return alumno || null;
+}
+
+function limpiarBusquedaExpediente() {
+    const searchInput = document.getElementById('searchDocumento');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    const selectAlumno = document.getElementById('filterAlumnoDocumentos');
+    if (selectAlumno) {
+        selectAlumno.value = '';
+    }
+    mostrarDocumentosRevision();
+}
+
+async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
+    const container = document.getElementById('documentosContainer');
+    const docsAlumno = await obtenerDocumentosAlumno(alumno.numeroControl);
+
+    // Calcular estadísticas
+    const totalReq = docsAlumno.length;
+    const aprobados = docsAlumno.filter(d => d.estado === 'aprobado').length;
+    const pendientes = docsAlumno.filter(d => d.estado === 'pendiente').length;
+    const rechazados = docsAlumno.filter(d => d.estado === 'rechazado').length;
+    const porcentaje = Math.round((aprobados / totalReq) * 100);
+
+    container.innerHTML = `
+        <div class="expediente-container fade-in">
+            <!-- Header del Expediente -->
+            <div class="expediente-header-card">
+                <div class="expediente-header-layout">
+                    <!-- Columna Izquierda: Información del Alumno -->
+                    <div class="expediente-header-left">
+                        <div class="expediente-user-avatar">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="expediente-user-info">
+                            <div class="expediente-name-row">
+                                <h2>${alumno.nombre}</h2>
+                                <span class="badge badge-completo">${porcentaje}% COMPLETADO</span>
+                            </div>
+                            <div class="expediente-meta">
+                                <span><i class="fas fa-id-card"></i> ${alumno.numeroControl}</span>
+                                <span><i class="fas fa-envelope"></i> ${alumno.email}</span>
+                                <span><i class="fas fa-calendar-alt"></i> Registrado: ${formatearFecha(alumno.fechaRegistro || new Date())}</span>
+                            </div>
+                            <div class="expediente-header-actions">
+                                <button class="btn-secondary" onclick="limpiarBusquedaExpediente()">
+                                    <i class="fas fa-arrow-left"></i> Volver a la lista
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Progreso y Estadísticas -->
+                    <div class="expediente-header-right">
+                        <div class="expediente-progress-section">
+                            <div class="progress-info-row">
+                                <span>Progreso de Documentación</span>
+                                <strong>${aprobados} de ${totalReq} aprobados</strong>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${porcentaje}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="expediente-stats-grid">
+                            <div class="header-stat-item">
+                                <span class="header-stat-value" style="color: #10b981;">${aprobados}</span>
+                                <span class="header-stat-label">Aprobados</span>
+                            </div>
+                            <div class="header-stat-item">
+                                <span class="header-stat-value" style="color: var(--accent-color);">${pendientes}</span>
+                                <span class="header-stat-label">Pendientes</span>
+                            </div>
+                            <div class="header-stat-item">
+                                <span class="header-stat-value" style="color: #ef4444;">${rechazados}</span>
+                                <span class="header-stat-label">Rechazados</span>
+                            </div>
+                            <div class="header-stat-item">
+                                <span class="header-stat-value" style="color: #9ca3af;">${totalReq - (aprobados + pendientes + rechazados)}</span>
+                                <span class="header-stat-label">Sin subir</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 30px 0 20px 0; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: white;"><i class="fas fa-folder-open"></i> Documentos del Alumno</h3>
+            </div>
+
+            <div class="documentos-grid">
+                ${docsAlumno.map(doc => {
+        const subido = doc.subido;
+        const iconClass = getDocIcon(doc.nombre);
+
+        if (!subido) {
+            return `
+                            <div class="documento-card doc-not-uploaded fade-in">
+                                <div class="documento-card-header">
+                                    <div class="doc-icon-circle">
+                                        <i class="fas ${iconClass}"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="color: rgba(255,255,255,0.8);">${doc.nombre}</h4>
+                                        <span class="badge badge-pendiente">PENDIENTE DE SUBIR</span>
+                                    </div>
+                                </div>
+                                <div class="doc-empty-state">
+                                    <i class="fas fa-file-upload"></i>
+                                    <p>El alumno aún no ha cargado este documento</p>
+                                </div>
+                            </div>
+                        `;
+        }
+
+        // Documento subido
+        const realDoc = doc.documento;
+        const config = estadoColors[realDoc.estado || 'pendiente'];
+        const urlArchivo = realDoc.contenido || realDoc.urlArchivo;
+        const esPDF = realDoc.tipo && realDoc.tipo.includes('pdf');
+
+        return `
+                        <div class="expediente-doc-card fade-in" style="border-left: 5px solid ${config.iconColor}">
+                            <div class="doc-header" style="background: ${config.bg}; border-bottom-color: ${config.border}">
+                                <div class="doc-header-main">
+                                    <div class="doc-type-icon" style="color: ${config.iconColor}">
+                                        <i class="fas ${iconClass}"></i>
+                                    </div>
+                                    <div class="doc-title-info">
+                                        <h4 style="margin: 0; color: white;">${doc.nombre}</h4>
+                                        <p class="doc-filename"><i class="fas fa-file-pdf"></i> ${realDoc.nombreArchivo || 'documento.pdf'}</p>
+                                    </div>
+                                </div>
+                                <div class="doc-status-badge">
+                                    <span class="badge" style="background: ${config.bg}; color: ${config.iconColor}; border-color: ${config.border}">
+                                        <i class="fas ${config.icon}"></i> ${realDoc.estado.toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="doc-info-bar">
+                                <span><i class="fas fa-calendar-alt"></i> Subido: ${formatearFechaHora(realDoc.fechaCarga)}</span>
+                                ${realDoc.fechaRevision ? `<span><i class="fas fa-user-check"></i> Revisado: ${formatearFecha(realDoc.fechaRevision)}</span>` : ''}
+                            </div>
+
+                            <div class="doc-preview-area">
+                                ${esPDF ? `
+                                    <iframe src="${urlArchivo}" class="doc-preview-embed"></iframe>
+                                ` : `
+                                    <img src="${urlArchivo}" class="doc-preview-img">
+                                `}
+                            </div>
+
+                            <div class="doc-actions-area">
+                                ${realDoc.observaciones ? `
+                                    <div class="doc-observations">
+                                        <div class="obs-title"><i class="fas fa-exclamation-triangle"></i> Observaciones del Administrador</div>
+                                        <div class="obs-text">${realDoc.observaciones}</div>
+                                    </div>
+                                ` : ''}
+
+                                <div class="doc-buttons-row" id="buttons-${realDoc.id}">
+                                    <button class="btn-expediente btn-aprobar" onclick="aprobarDocumento('${realDoc.id}')">
+                                        <i class="fas fa-check"></i> Aprobar
+                                    </button>
+                                    <button class="btn-expediente btn-rechazar" onclick="mostrarSeccionRechazo('${realDoc.id}')">
+                                        <i class="fas fa-times"></i> Rechazar
+                                    </button>
+                                </div>
+
+                                <!-- Sección de Rechazo Inline (Oculta por defecto) -->
+                                <div id="rechazo-container-${realDoc.id}" class="rechazo-inline-container" style="display: none;">
+                                    <div class="rechazo-title">Retroalimentación / Observaciones:</div>
+                                    <textarea id="obs-${realDoc.id}" class="rechazo-textarea" placeholder="Escribe aquí..."></textarea>
+                                    <div class="rechazo-actions">
+                                        <button class="btn-rechazo-confirm" onclick="confirmarRechazo('${realDoc.id}')">
+                                            <i class="fas fa-check"></i> ACEPTAR
+                                        </button>
+                                        <button class="btn-rechazo-cancel" onclick="cancelarRechazo('${realDoc.id}')">
+                                            <i class="fas fa-times"></i> RECHAZAR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+    }).join('')}
+            </div>
+        </div>
+    `;
+}
+
