@@ -1,30 +1,33 @@
-// Sistema de gestión de documentos - Versión Firebase
+// Sistema de gestión de documentos - Versión Supabase
 
-// ===== FUNCIONES DE DATOS (FIRESTORE) =====
+// ===== FUNCIONES DE DATOS (SUPABASE) =====
 
 /**
- * Obtiene documentos de Firestore con filtros.
+ * Obtiene documentos de Supabase con filtros.
  * @param {Object} filtros - Filtros de búsqueda (numeroControl, estado, tipoDocumento).
  * @returns {Promise<Array>} Lista de documentos.
  */
 async function obtenerDocumentos(filtros = {}) {
     try {
-        let query = db.collection('documentos');
+        let query = window.supabaseClient.from('documentos').select('*');
 
         if (filtros.numeroControl) {
-            query = query.where('numeroControl', '==', filtros.numeroControl);
+            query = query.eq('numero_control', filtros.numeroControl);
         }
 
         if (filtros.estado) {
-            query = query.where('estado', '==', filtros.estado);
+            query = query.eq('estado', filtros.estado);
         }
 
         if (filtros.tipoDocumento) {
-            query = query.where('tipoDocumento', '==', filtros.tipoDocumento);
+            query = query.eq('tipo_documento', filtros.tipoDocumento);
         }
 
-        const snapshot = await query.get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        return data || [];
     } catch (error) {
         console.error('Error al obtener documentos:', error);
         return [];
@@ -32,16 +35,20 @@ async function obtenerDocumentos(filtros = {}) {
 }
 
 /**
- * Guarda un nuevo documento en Firestore.
+ * Guarda un nuevo documento en Supabase.
  * @param {Object} documento - Datos del documento.
  */
 async function guardarDocumento(documento) {
     try {
-        const docRef = await db.collection('documentos').add({
-            ...documento,
-            fechaCreacion: new Date().toISOString()
-        });
-        return { exito: true, id: docRef.id };
+        const { data, error } = await window.supabaseClient
+            .from('documentos')
+            .insert(documento)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return { exito: true, id: data.id };
     } catch (error) {
         console.error('Error al guardar documento:', error);
         return { exito: false, mensaje: error.message };
@@ -49,16 +56,19 @@ async function guardarDocumento(documento) {
 }
 
 /**
- * Actualiza un documento existente en Firestore.
+ * Actualiza un documento existente en Supabase.
  * @param {string} id - ID del documento.
  * @param {Object} datos - Datos a actualizar.
  */
 async function actualizarDocumento(id, datos) {
     try {
-        await db.collection('documentos').doc(id).update({
-            ...datos,
-            fechaActualizacion: new Date().toISOString()
-        });
+        const { error } = await window.supabaseClient
+            .from('documentos')
+            .update(datos)
+            .eq('id', id);
+
+        if (error) throw error;
+
         return { exito: true };
     } catch (error) {
         console.error('Error al actualizar documento:', error);
@@ -67,12 +77,18 @@ async function actualizarDocumento(id, datos) {
 }
 
 /**
- * Elimina un documento de Firestore.
+ * Elimina un documento de Supabase.
  * @param {string} id - ID del documento.
  */
 async function eliminarDocumento(id) {
     try {
-        await db.collection('documentos').doc(id).delete();
+        const { error } = await window.supabaseClient
+            .from('documentos')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
         return { exito: true };
     } catch (error) {
         console.error('Error al eliminar documento:', error);
@@ -81,15 +97,20 @@ async function eliminarDocumento(id) {
 }
 
 /**
- * Obtiene un documento por su ID (Firestore con fallback a Local)
+ * Obtiene un documento por su ID (Supabase con fallback a Local)
  */
 async function obtenerDocumentoPorId(id) {
     try {
-        // 1. Intentar Firestore
-        const doc = await db.collection('documentos').doc(id).get();
-        if (doc.exists) {
-            return { id: doc.id, ...doc.data() };
-        }
+        // 1. Intentar Supabase
+        const { data, error } = await window.supabaseClient
+            .from('documentos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no encontrado
+
+        if (data) return data;
 
         // 2. Fallback a LocalStorage (legacy)
         const documentosLocales = JSON.parse(localStorage.getItem('documentos')) || [];
@@ -126,7 +147,7 @@ function guardarDocumentoLocal(documento) {
 // ===== FUNCIONES DE NEGOCIO =====
 
 /**
- * Sube un archivo a Firebase Storage y guarda sus metadatos en Firestore.
+ * Sube un archivo a Supabase Storage y guarda sus metadatos en la base de datos.
  */
 async function subirDocumento(archivo, tipoDocumento, numeroControl) {
     const errores = validarArchivo(archivo);
@@ -134,39 +155,59 @@ async function subirDocumento(archivo, tipoDocumento, numeroControl) {
         return { exito: false, mensaje: errores.join(', ') };
     }
 
+    // Validar que numeroControl no sea undefined o null
+    if (!numeroControl) {
+        console.error('numeroControl es undefined o null:', numeroControl);
+        console.error('Datos del usuario actual:', obtenerUsuarioActual());
+        return { exito: false, mensaje: 'Error: No se pudo obtener el número de control del usuario. Por favor, cierra sesión e inicia sesión nuevamente.' };
+    }
+
     try {
+        console.log('Subiendo documento para:', numeroControl);
         mostrarToast('Subiendo documento...', 'info');
 
         // Verificar si ya existe
         const existentes = await obtenerDocumentos({ numeroControl, tipoDocumento });
         const existente = existentes[0];
 
-        // Subir a Storage
-        const resultadoArchivo = await subirArchivo(archivo, 'documentos');
+        // Construir ruta para Supabase Storage
+        const timestamp = Date.now();
+        const extension = archivo.name.split('.').pop();
+        const nombreLimpio = tipoDocumento.replace(/[^a-zA-Z0-9]/g, '_');
+        const rutaArchivo = `${numeroControl}/${nombreLimpio}_${timestamp}.${extension}`;
+
+        // Subir a Storage de Supabase
+        const resultadoArchivo = await subirArchivoSupabase(archivo, rutaArchivo);
         if (!resultadoArchivo.exito) {
             return { exito: false, mensaje: 'Error al subir archivo: ' + resultadoArchivo.mensaje };
         }
 
         const datosDoc = {
-            numeroControl,
-            tipoDocumento,
-            nombreArchivo: archivo.name,
-            tamaño: archivo.size,
-            tipo: archivo.type,
-            urlArchivo: resultadoArchivo.url,
-            rutaArchivo: resultadoArchivo.ruta,
+            numero_control: numeroControl,
+            tipo_documento: tipoDocumento,
+            url: resultadoArchivo.url,
             estado: 'pendiente',
             observaciones: '',
-            revisadoPor: null,
-            fechaRevision: null,
-            fechaCarga: new Date().toISOString()
+            revisado_por: null
         };
 
         let resultado;
         if (existente) {
             resultado = await actualizarDocumento(existente.id, datosDoc);
             resultado.id = existente.id;
-            if (existente.rutaArchivo) await eliminarArchivo(existente.rutaArchivo);
+            // Intentar eliminar el archivo anterior del storage
+            if (existente.url) {
+                // Extraer la ruta del archivo desde la URL
+                try {
+                    const urlPartes = existente.url.split('/documentos/');
+                    if (urlPartes.length > 1) {
+                        const rutaAnterior = urlPartes[1].split('?')[0];
+                        await eliminarArchivoSupabase(rutaAnterior);
+                    }
+                } catch (e) {
+                    console.warn('No se pudo eliminar el archivo anterior:', e);
+                }
+            }
         } else {
             resultado = await guardarDocumento(datosDoc);
         }
@@ -181,7 +222,7 @@ async function subirDocumento(archivo, tipoDocumento, numeroControl) {
                 asunto: existente ? 'Documento Recargado' : 'Nuevo Documento',
                 mensaje: `El alumno ${numeroControl} ha subido: ${tipoDocumento}`,
                 tipo: 'sistema',
-                relacionadoId: resultado.id
+                relacionado_id: resultado.id
             });
 
             mostrarToast('Documento subido con éxito', 'success');
@@ -204,22 +245,21 @@ async function revisarDocumento(documentoId, estado, observaciones = '') {
     const updates = {
         estado,
         observaciones,
-        revisadoPor: usuarioActual ? usuarioActual.email : 'admin',
-        fechaRevision: new Date().toISOString()
+        revisado_por: usuarioActual ? usuarioActual.email : 'admin'
     };
 
     const resultado = await actualizarDocumento(documentoId, updates);
     if (resultado.exito) {
         guardarDocumentoLocal({ id: documentoId, ...updates });
-        await registrarBitacora('documento', `Documento ${estado}: ${documento.tipoDocumento}`);
+        await registrarBitacora('documento', `Documento ${estado}: ${documento.tipo_documento}`);
 
         await guardarMensaje({
             remitente: 'admin',
-            destinatario: documento.numeroControl,
+            destinatario: documento.numero_control,
             asunto: `Documento ${estado.charAt(0).toUpperCase() + estado.slice(1)}`,
-            mensaje: `Tu documento "${documento.tipoDocumento}" ha sido ${estado}. ${observaciones}`,
+            mensaje: `Tu documento "${documento.tipo_documento}" ha sido ${estado}. ${observaciones}`,
             tipo: 'sistema',
-            relacionadoId: documentoId
+            relacionado_id: documentoId
         });
     }
     return resultado;
@@ -233,7 +273,7 @@ async function obtenerDocumentosAlumno(numeroControl) {
     const subidos = await obtenerDocumentos({ numeroControl });
 
     return requeridos.map(req => {
-        const doc = subidos.find(d => d.tipoDocumento === req.id);
+        const doc = subidos.find(d => d.tipo_documento === req.id);
         return {
             ...req,
             subido: !!doc,
@@ -252,10 +292,10 @@ async function descargarDocumento(documentoId) {
 
     try {
         const link = document.createElement('a');
-        link.href = doc.urlArchivo || doc.contenido;
-        link.download = doc.nombreArchivo || `documento-${documentoId}.pdf`;
+        link.href = doc.url || doc.contenido;
+        link.download = doc.tipo_documento.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
         link.click();
-        await registrarBitacora('documento', `Descarga de ${doc.tipoDocumento}`);
+        await registrarBitacora('documento', `Descarga de ${doc.tipo_documento}`);
         mostrarToast('Descargando...', 'success');
     } catch (error) {
         console.error('Error al descargar:', error);
@@ -272,14 +312,25 @@ async function eliminarDocumentoCompleto(documentoId) {
 
     confirmar('Eliminar Documento', '¿Estás seguro?', async () => {
         try {
-            if (doc.rutaArchivo) await eliminarArchivo(doc.rutaArchivo);
+            // Intentar eliminar el archivo del storage
+            if (doc.url) {
+                try {
+                    const urlPartes = doc.url.split('/documentos/');
+                    if (urlPartes.length > 1) {
+                        const ruta = urlPartes[1].split('?')[0];
+                        await eliminarArchivoSupabase(ruta);
+                    }
+                } catch (e) {
+                    console.warn('No se pudo eliminar el archivo del storage:', e);
+                }
+            }
             await eliminarDocumento(documentoId);
 
             // Sync local
             const locales = JSON.parse(localStorage.getItem('documentos')) || [];
             localStorage.setItem('documentos', JSON.stringify(locales.filter(d => d.id !== documentoId)));
 
-            await registrarBitacora('documento', `Eliminación de ${doc.tipoDocumento}`);
+            await registrarBitacora('documento', `Eliminación de ${doc.tipo_documento}`);
             mostrarToast('Eliminado', 'success');
 
             if (typeof cargarDocumentos === 'function') cargarDocumentos();

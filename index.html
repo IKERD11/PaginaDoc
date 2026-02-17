@@ -69,65 +69,18 @@
         </div>
     </div>
 
-    <!-- Firebase Bundle Local (sin dependencia de CDN) -->
-    <script src="js/firebase-bundle.js" onload="console.log('✅ Firebase bundle cargado localmente')"
-        onerror="console.error('❌ Error al cargar firebase-bundle.js')"></script>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Inicialización Firebase INLINE -->
-    <script>
-        console.log('🔄 Iniciando carga de Firebase...');
-
-        window.firebaseReady = false;
-
-        function initializeFirebase() {
-            if (typeof firebase === 'undefined') {
-                console.log('⏳ Esperando Firebase... (intento: ' + (window.firebaseAttempts || 0) + ')');
-                window.firebaseAttempts = (window.firebaseAttempts || 0) + 1;
-
-                if (window.firebaseAttempts > 50) {
-                    console.error('❌ ERROR CRÍTICO: Firebase no se cargó después de 50 intentos');
-                    console.error('Verifica que js/firebase-bundle.js exista');
-                    return;
-                }
-
-                setTimeout(initializeFirebase, 200);
-                return;
-            }
-
-            console.log('✅ Firebase SDK disponible');
-
-            try {
-                // Firebase ya está inicializado en el bundle, solo exponemos los servicios
-                window.auth = firebase.auth();
-                window.db = firebase.firestore();
-                window.storage = firebase.storage();
-                window.firebaseReady = true;
-
-                console.log('✓ Firebase inicializado correctamente');
-                console.log('  - Auth disponible:', typeof window.auth !== 'undefined');
-                console.log('  - Firestore disponible:', typeof window.db !== 'undefined');
-                console.log('  - Storage disponible:', typeof window.storage !== 'undefined');
-
-                // Notificar que Firebase está listo
-                window.dispatchEvent(new Event('firebaseReady'));
-            } catch (error) {
-                console.error('❌ Error al inicializar Firebase:', error.message);
-                setTimeout(initializeFirebase, 500);
-            }
-        }
-
-        // Iniciar después de que carguen todos los scripts
-        window.addEventListener('load', initializeFirebase);
-        // Intentar lo antes posible
-        initializeFirebase();
-    </script>
+    <!-- Inicialización Supabase -->
+    <script src="js/supabase-init.js"></script>
 
     <!-- Scripts de configuración del proyecto -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
 
-    <!-- Utilidades Firebase -->
-    <script src="js/firebase-utils.js"></script>
+    <!-- Utilidades Supabase -->
+    <script src="js/supabase-utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/login.js"></script>
 </body>

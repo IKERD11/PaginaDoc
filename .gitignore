@@ -1,0 +1,5 @@
+node_modules/
+*.log
+.env
+*.json.bak
+paginadoc-5a1fb-firebase-adminsdk-fbsvc-5a0a24bb50.json

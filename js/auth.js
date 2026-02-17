@@ -56,16 +56,16 @@ function cerrarSesion() {
     sessionStorage.removeItem('usuarioActual');
 }
 
-// Cerrar sesión de Firebase (async)
-async function cerrarSesionFirebase() {
+// Cerrar sesión de Supabase (async)
+async function cerrarSesionSupabase() {
     try {
         // Primero limpiar sesión local
         cerrarSesion();
 
-        // Luego hacer signOut de Firebase y ESPERAR a que termine
-        if (typeof window.auth !== 'undefined') {
-            await window.auth.signOut();
-            console.log('Sesión de Firebase cerrada');
+        // Luego hacer signOut de Supabase y ESPERAR a que termine
+        if (typeof window.supabaseClient !== 'undefined') {
+            await window.supabaseClient.auth.signOut();
+            console.log('Sesión de Supabase cerrada');
         }
 
         // DESPUÉS de que signOut termine, redirigir
@@ -77,6 +77,11 @@ async function cerrarSesionFirebase() {
         // Redirigir aunque haya error
         window.location.href = 'index.html';
     }
+}
+
+// Alias para mantener compatibilidad con código existente
+async function cerrarSesionFirebase() {
+    return await cerrarSesionSupabase();
 }
 
 // Verificar autenticación

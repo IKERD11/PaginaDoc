@@ -1,4 +1,4 @@
-// Script de login simplificado con Firebase
+// Script de login simplificado con Supabase
 
 console.log('login.js cargado');
 
@@ -6,18 +6,17 @@ let authUnsubscribe = null; // Guardar función para dejar de escuchar
 let isRedirecting = false; // Evitar redirecciones múltiples
 
 function iniciarLogin() {
-    console.log('Verificando Firebase...');
-    console.log('  - window.firebaseReady:', window.firebaseReady);
-    console.log('  - window.auth:', typeof window.auth);
-    console.log('  - window.db:', typeof window.db);
+    console.log('Verificando Supabase...');
+    console.log('  - window.supabaseReady:', window.supabaseReady);
+    console.log('  - window.supabaseClient:', typeof window.supabaseClient);
 
-    if (!window.firebaseReady || typeof window.auth === 'undefined' || typeof window.db === 'undefined') {
-        console.log('Esperando Firebase...');
+    if (!window.supabaseReady || typeof window.supabaseClient === 'undefined') {
+        console.log('Esperando Supabase...');
         setTimeout(iniciarLogin, 500);
         return;
     }
 
-    console.log('Firebase disponible, iniciando login...');
+    console.log('Supabase disponible, iniciando login...');
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM cargado');
@@ -36,53 +35,61 @@ function iniciarLogin() {
 
         // Verificar si hay sesión activa (solo registrar listener una vez)
         if (!authUnsubscribe) {
-            authUnsubscribe = window.auth.onAuthStateChanged((usuarioAuth) => {
+            const { data: authListener } = window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                const usuarioAuth = session?.user;
                 console.log('Verificando sesión activa...', usuarioAuth ? 'SÍ' : 'NO');
 
                 if (usuarioAuth && !isRedirecting) {
                     console.log('Usuario autenticado, obteniendo datos...');
                     isRedirecting = true; // Evitar redirecciones múltiples
 
-                    window.db.collection('usuarios').doc(usuarioAuth.uid)
-                        .get()
-                        .then(doc => {
-                            if (doc.exists) {
-                                const rol = doc.data().rol || 'alumno';
-                                console.log('Rol:', rol);
+                    try {
+                        const { data: usuario, error } = await window.supabaseClient
+                            .from('usuarios')
+                            .select('*')
+                            .eq('id', usuarioAuth.id)
+                            .single();
 
-                                if (rol === 'admin') {
-                                    console.log('Redirigiendo a admin.html');
-                                    guardarUsuarioActual({
-                                        uid: usuarioAuth.uid,
-                                        email: usuarioAuth.email,
-                                        nombre: doc.data().nombre,
-                                        rol: rol,
-                                        numeroControl: doc.data().numeroControl
-                                    });
-                                    window.location.href = 'admin.html';
-                                } else {
-                                    console.log('Redirigiendo a alumno.html');
-                                    guardarUsuarioActual({
-                                        uid: usuarioAuth.uid,
-                                        email: usuarioAuth.email,
-                                        nombre: doc.data().nombre,
-                                        rol: rol,
-                                        numeroControl: doc.data().numeroControl
-                                    });
-                                    window.location.href = 'alumno.html';
-                                }
+                        if (error) throw error;
+
+                        if (usuario) {
+                            const rol = usuario.rol || 'alumno';
+                            console.log('Rol:', rol);
+
+                            if (rol === 'admin') {
+                                console.log('Redirigiendo a admin.html');
+                                guardarUsuarioActual({
+                                    uid: usuarioAuth.id,
+                                    email: usuarioAuth.email,
+                                    nombre: usuario.nombre,
+                                    rol: rol,
+                                    numeroControl: usuario.numero_control
+                                });
+                                window.location.href = 'admin.html';
                             } else {
-                                isRedirecting = false; // Reintentar
+                                console.log('Redirigiendo a alumno.html');
+                                guardarUsuarioActual({
+                                    uid: usuarioAuth.id,
+                                    email: usuarioAuth.email,
+                                    nombre: usuario.nombre,
+                                    rol: rol,
+                                    numeroControl: usuario.numero_control
+                                });
+                                window.location.href = 'alumno.html';
                             }
-                        })
-                        .catch(error => {
-                            console.error('Error al obtener rol:', error.message);
+                        } else {
                             isRedirecting = false; // Reintentar
-                        });
+                        }
+                    } catch (error) {
+                        console.error('Error al obtener rol:', error.message);
+                        isRedirecting = false; // Reintentar
+                    }
                 } else if (!usuarioAuth) {
                     isRedirecting = false; // Usuario no autenticado, permitir login
                 }
             });
+
+            authUnsubscribe = () => authListener.subscription.unsubscribe();
         }
 
         // Manejar envío del formulario
@@ -91,7 +98,7 @@ function iniciarLogin() {
 
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
-
+            
             console.log('Intento de login con:', { email });
 
             if (!email || !password) {
@@ -105,64 +112,77 @@ function iniciarLogin() {
             btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión...';
 
             try {
-                console.log('Autenticando con Firebase...');
+                // 1. Iniciar sesión en Supabase
+                const { data: authData, error: authError } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
 
-                const resultado = await window.auth.signInWithEmailAndPassword(email, password);
+                if (authError) {
+                    // El bloque catch manejará el error y mostrará el mensaje adecuado.
+                    throw authError;
+                }
 
-                console.log('Autenticación exitosa:', resultado.user.uid);
+                const user = authData.user;
+                if (!user) {
+                    throw new Error("No se pudo obtener la información del usuario después del login.");
+                }
+                
+                console.log('Autenticación exitosa:', user.id);
                 console.log('Obteniendo datos del usuario...');
 
-                const doc = await window.db.collection('usuarios').doc(resultado.user.uid).get();
+                // 2. Obtener el perfil del usuario de la tabla 'usuarios'
+                // Esta consulta ahora es segura y no causa recursión gracias a las RLS corregidas.
+                const { data: profileData, error: profileError } = await window.supabaseClient
+                    .from('usuarios')
+                    .select('*') // Traemos todos los datos para guardarlos en sesión
+                    .eq('id', user.id)
+                    .single();
 
-                if (doc.exists) {
-                    const usuarioData = doc.data();
-                    console.log('Usuario:', {
-                        nombre: usuarioData.nombre,
-                        rol: usuarioData.rol,
-                        numeroControl: usuarioData.numeroControl
-                    });
+                if (profileError) {
+                    console.error("Error al obtener el perfil del usuario:", profileError.message);
+                    throw new Error(`No se pudo leer el perfil del usuario. Detalles: ${profileError.message}`);
+                }
 
-                    guardarUsuarioActual({
-                        uid: resultado.user.uid,
-                        email: email,
-                        nombre: usuarioData.nombre,
-                        rol: usuarioData.rol,
-                        numeroControl: usuarioData.numeroControl
-                    });
+                if (!profileData) {
+                    throw new Error("El perfil del usuario no fue encontrado en la base de datos.");
+                }
+                
+                console.log('Usuario:', {
+                    nombre: profileData.nombre,
+                    rol: profileData.rol,
+                    numeroControl: profileData.numero_control
+                });
 
-                    console.log('Usuario guardado en sesión');
-                    console.log('Redirigiendo a:', usuarioData.rol === 'admin' ? 'admin.html' : 'alumno.html');
+                // 3. Guardar datos en la sesión y redirigir
+                guardarUsuarioActual({
+                    uid: user.id,
+                    email: user.email,
+                    nombre: profileData.nombre,
+                    rol: profileData.rol,
+                    numeroControl: profileData.numero_control
+                });
+                
+                console.log('Usuario guardado en sesión. Redirigiendo...');
+                errorMessage.style.display = 'none';
 
-                    errorMessage.style.display = 'none';
-
-                    setTimeout(() => {
-                        if (usuarioData.rol === 'admin') {
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'alumno.html';
-                        }
-                    }, 500);
+                // Redirigir según el rol
+                if (profileData.rol === 'admin') {
+                    window.location.href = 'admin.html';
                 } else {
-                    console.error('Usuario autenticado pero sin documento en Firestore');
-                    mostrarError('Error: Usuario incompleto en el sistema');
-                    restaurarBoton();
+                    window.location.href = 'alumno.html';
                 }
 
             } catch (error) {
-                console.error('Error de login:', error.code, error.message);
+                console.error('Error de login:', error.message);
 
                 let mensaje = 'Error al iniciar sesión';
 
-                if (error.code === 'auth/user-not-found') {
-                    mensaje = 'El email no está registrado';
-                } else if (error.code === 'auth/wrong-password') {
-                    mensaje = 'Contraseña incorrecta';
-                } else if (error.code === 'auth/invalid-email') {
-                    mensaje = 'Email inválido';
-                } else if (error.code === 'auth/invalid-login-credentials') {
+                // Mensajes de error de Supabase
+                if (error.message.includes('Invalid login credentials')) {
                     mensaje = 'Email o contraseña incorrectos';
-                } else if (error.code === 'auth/too-many-requests') {
-                    mensaje = 'Demasiados intentos, intenta más tarde';
+                } else if (error.message.includes('Email not confirmed')) {
+                    mensaje = 'Email no confirmado';
                 } else {
                     mensaje = error.message;
                 }
