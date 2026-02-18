@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "node node_modules/esbuild/bin/esbuild firebase-bundle-src.js --bundle --outfile=js/firebase-bundle.js --platform=browser",
+    "build": "node node_modules/esbuild/bin/esbuild firebase-bundle-src.js --bundle --minify --outfile=js/firebase-bundle.js --platform=browser",
     "start": "npx serve ."
   },
   "dependencies": {
