@@ -790,13 +790,259 @@ body {
     animation-delay: 0s;
 }
 
-.page-shape:nth-child(2) {
-    width: 200px;
-    height: 200px;
-    bottom: 20%;
-    left: 5%;
-    animation-delay: 5s;
+
+/* ===========================
+   CLASES DE UTILIDAD AGREGADAS (REFACTOR JAVASCRIPT)
+   =========================== */
+
+/* Cajas de estado para documentos (reemplaza estilos en línea de alumno.js) */
+.status-box {
+    padding: 20px;
+    text-align: center;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    margin-top: 15px;
+    transition: var(--transition);
 }
+
+.status-box.pending {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-box.approved {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-box.rejected {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-box i.status-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.status-box.pending i.status-icon {
+    color: var(--warning-color);
+}
+
+.status-box.approved i.status-icon {
+    color: var(--success-color);
+}
+
+.status-box.rejected i.status-icon {
+    color: var(--danger-color);
+}
+
+.status-box p {
+    margin-top: 10px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.status-box .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.status-box .actions button {
+    flex: 1;
+}
+
+/* Alertas específicas */
+.alert-box {
+    margin: 15px 0;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.alert-box.danger {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: white;
+}
+
+/* Tarjetas de Citas (Admin y Alumnos) */
+.cita-card-item {
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.cita-card-item:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.cita-info-card-premium {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+}
+
+.cita-info-list {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+}
+
+.cita-info-list ul {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.8;
+}
+
+/* Migración y Configuración */
+.migration-warning-box {
+    background: rgba(244, 185, 66, 0.1);
+    border-left: 4px solid var(--accent-color);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.migration-warning-title {
+    color: var(--accent-color);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.migration-warning-text {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Helpers de Texto y Badges */
+.text-secondary-glass {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.badge-resumen-pendiente {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+
+.badge-resumen-revisado {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rechazado-highlight {
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);
+}
+
+
+.document-upload-progress {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+}
+
+
+/* ===========================
+   ESTILOS REDISEÑO REPORTES
+   =========================== */
+
+.reportes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+    padding: 10px 0;
+}
+
+.reportes-grid .form-group {
+    margin-bottom: 0;
+}
+
+.reportes-grid label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.reportes-grid .input-glass {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.reportes-grid .input-glass:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--primary-light);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.reportes-grid .input-glass option {
+    background: var(--primary-dark);
+    color: white;
+}
+
+.report-actions {
+    display: flex;
+    align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+    .reportes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .export-actions {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .export-actions span {
+        margin-bottom: 10px;
+    }
+}
+
+
+
+
 
 .page-shape:nth-child(3) {
     width: 150px;
@@ -1733,6 +1979,24 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.doc-loading-spinner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.doc-preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
 }
 
 .doc-preview-embed {

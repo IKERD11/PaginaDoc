@@ -1,7 +1,7 @@
 // Sistema de mensajería
 
 // Crear nuevo mensaje
-function crearMensaje(de, para, asunto, contenido, categoria = 'general') {
+async function crearMensaje(de, para, asunto, contenido, categoria = 'general') {
     const mensaje = {
         id: generarId(),
         de: de, // numeroControl del remitente
@@ -18,7 +18,7 @@ function crearMensaje(de, para, asunto, contenido, categoria = 'general') {
     guardarMensaje(mensaje);
     
     // Crear notificación para el destinatario
-    const remitente = obtenerUsuarioPorNumeroControl(de);
+    const remitente = await obtenerUsuarioPorNumeroControl(de);
     crearNotificacion({
         numeroControl: para,
         tipo: 'mensaje',
@@ -158,7 +158,7 @@ function crearMensajeSistema(para, asunto, contenido, categoria = 'general') {
 }
 
 // Enviar mensaje masivo (solo admin)
-function enviarMensajeMasivo(asunto, contenido, destinatarios = 'todos') {
+async function enviarMensajeMasivo(asunto, contenido, destinatarios = 'todos') {
     const usuarioActual = obtenerUsuarioActual();
     
     if (usuarioActual.rol !== 'admin') {
@@ -171,17 +171,21 @@ function enviarMensajeMasivo(asunto, contenido, destinatarios = 'todos') {
     let usuarios = [];
     
     if (destinatarios === 'todos') {
-        usuarios = obtenerUsuarios({ rol: 'alumno' });
+        usuarios = await obtenerUsuarios({ rol: 'alumno' });
     } else if (Array.isArray(destinatarios)) {
-        usuarios = destinatarios.map(nc => obtenerUsuarioPorNumeroControl(nc)).filter(u => u);
+        // Obtener usuarios en paralelo
+        const promesas = destinatarios.map(nc => obtenerUsuarioPorNumeroControl(nc));
+        const resultados = await Promise.all(promesas);
+        usuarios = resultados.filter(u => u);
     }
     
     let enviados = 0;
     
-    usuarios.forEach(usuario => {
-        const resultado = crearMensaje(
+    // Enviar mensajes en paralelo
+    await Promise.all(usuarios.map(async (usuario) => {
+        const resultado = await crearMensaje(
             usuarioActual.numeroControl,
-            usuario.numeroControl,
+            usuario.numeroControl || usuario.numero_control,
             asunto,
             contenido,
             'general'
@@ -190,7 +194,7 @@ function enviarMensajeMasivo(asunto, contenido, destinatarios = 'todos') {
         if (resultado.exito) {
             enviados++;
         }
-    });
+    }));
     
     registrarBitacora('mensaje', `Mensaje masivo enviado a ${enviados} destinatarios: ${asunto}`);
     

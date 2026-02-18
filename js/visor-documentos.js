@@ -86,8 +86,8 @@ async function verVistaPrevia(documentoId) {
                     <div style="flex: 1; min-width: 200px;">
                         <p style="margin: 0 0 8px 0; color: rgba(255,255,255,0.6); font-size: 13px;">Información del documento</p>
                         <div style="display: grid; grid-template-columns: auto 1fr; gap: 5px 15px; color: white; font-size: 14px;">
-                            <span style="color: rgba(255,255,255,0.5);">Alumno:</span> <span>${documento.numeroControl}</span>
-                            <span style="color: rgba(255,255,255,0.5);">Fecha:</span> <span>${formatearFechaHora(documento.fechaCarga || documento.fechaCreacion)}</span>
+                            <span style="color: rgba(255,255,255,0.5);">Alumno:</span> <span>${documento.numero_control || documento.numeroControl}</span>
+                            <span style="color: rgba(255,255,255,0.5);">Fecha:</span> <span>${formatearFechaHora(documento.fecha_carga || documento.fechaCarga || documento.fecha_creacion || documento.fechaCreacion)}</span>
                             <span style="color: rgba(255,255,255,0.5);">Estado:</span> <span>${obtenerBadgeEstado(documento.estado)}</span>
                         </div>
                     </div>
@@ -107,8 +107,50 @@ async function verVistaPrevia(documentoId) {
 
     modalContainer.appendChild(modal);
 
-    // Cargar PDF (ahora puede ser URL o base64)
-    cargarPDFenVisor(documento.urlArchivo || documento.contenido, documentoId);
+    // Para buckets privados, generar URL firmada temporal
+    let urlDoc = documento.url_archivo || documento.urlArchivo || documento.contenido;
+    if (!urlDoc) {
+        console.error('No se encontró URL o contenido del documento');
+        if (typeof mostrarToast === 'function') mostrarToast('El documento no tiene contenido disponible', 'error');
+        cerrarModal();
+        return;
+    }
+
+    // Si es una URL pública de Supabase Storage (legacy), extraer la ruta
+    if (urlDoc.includes('/storage/v1/object/public/documentos/')) {
+        const match = urlDoc.match(/\/documentos\/(.+?)(?:\?|$)/);
+        if (match && match[1]) {
+            urlDoc = match[1]; // Extraer solo la ruta del archivo
+            console.log('URL pública detectada, extraída ruta:', urlDoc);
+        }
+    }
+
+    // Si es una ruta (no URL completa de datos/blob), generar URL firmada
+    if (urlDoc && !urlDoc.startsWith('data:') && !urlDoc.startsWith('blob:')) {
+        // Verificar si es ruta simple o URL que necesita conversión
+        if (!urlDoc.startsWith('http') || urlDoc.includes('/storage/v1/object/')) {
+            console.log('Generando URL firmada para ruta:', urlDoc);
+            try {
+                const resultado = await obtenerURLDescargaSupabase(urlDoc);
+                if (resultado.exito) {
+                    urlDoc = resultado.url;
+                    console.log('URL firmada generada exitosamente');
+                } else {
+                    console.error('Error al generar URL firmada:', resultado.mensaje);
+                    if (typeof mostrarToast === 'function') mostrarToast('Error al acceder al documento', 'error');
+                    cerrarModal();
+                    return;
+                }
+            } catch (error) {
+                console.error('Error al obtener URL firmada:', error);
+                if (typeof mostrarToast === 'function') mostrarToast('Error al cargar el documento', 'error');
+                cerrarModal();
+                return;
+            }
+        }
+    }
+
+    cargarPDFenVisor(urlDoc, documentoId);
 
     // Cerrar al hacer clic fuera
     modal.addEventListener('click', (e) => {
@@ -145,18 +187,36 @@ function cargarPDFenVisor(contenidoBase64, documentoId) {
 function renderizarPDF(contenido, documentoId) {
     let loadingTask;
 
+    // Validar que el contenido existe
+    if (!contenido) {
+        console.error('Contenido de documento vacío o undefined');
+        if (typeof mostrarToast === 'function') mostrarToast('No se pudo cargar el documento', 'error');
+        return;
+    }
+
     // Verificar si es una URL o base64
     if (typeof contenido === 'string' && (contenido.startsWith('http') || contenido.startsWith('blob:'))) {
         loadingTask = pdfjsLib.getDocument(contenido);
-    } else {
+    } else if (typeof contenido === 'string') {
         // Asumir base64
-        const bstr = atob(contenido.split(',')[1] || contenido);
-        const n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        for (let i = 0; i < n; i++) {
-            u8arr[i] = bstr.charCodeAt(i);
+        try {
+            const base64Data = contenido.includes(',') ? contenido.split(',')[1] : contenido;
+            const bstr = atob(base64Data);
+            const n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            for (let i = 0; i < n; i++) {
+                u8arr[i] = bstr.charCodeAt(i);
+            }
+            loadingTask = pdfjsLib.getDocument(u8arr);
+        } catch (error) {
+            console.error('Error al decodificar base64:', error);
+            if (typeof mostrarToast === 'function') mostrarToast('Error al cargar el documento', 'error');
+            return;
         }
-        loadingTask = pdfjsLib.getDocument(u8arr);
+    } else {
+        console.error('Formato de contenido no reconocido:', typeof contenido);
+        if (typeof mostrarToast === 'function') mostrarToast('Formato de documento no válido', 'error');
+        return;
     }
 
     // Cargar PDF
@@ -250,10 +310,39 @@ async function descargarDocumentoPDF(documentoId) {
         return;
     }
 
+    let urlDescarga = documento.url_archivo || documento.urlArchivo || documento.contenido;
+    
+    // Si es una URL pública de Supabase Storage (legacy), extraer la ruta
+    if (urlDescarga && urlDescarga.includes('/storage/v1/object/public/documentos/')) {
+        const match = urlDescarga.match(/\/documentos\/(.+?)(?:\?|$)/);
+        if (match && match[1]) {
+            urlDescarga = match[1];
+        }
+    }
+    
+    // Si es una ruta (no URL completa de datos/blob), generar URL firmada
+    if (urlDescarga && !urlDescarga.startsWith('data:') && !urlDescarga.startsWith('blob:')) {
+        if (!urlDescarga.startsWith('http') || urlDescarga.includes('/storage/v1/object/')) {
+            try {
+                const resultado = await obtenerURLDescargaSupabase(urlDescarga);
+                if (resultado.exito) {
+                    urlDescarga = resultado.url;
+                } else {
+                    mostrarToast('Error al generar URL de descarga', 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error al obtener URL firmada:', error);
+                mostrarToast('Error al preparar la descarga', 'error');
+                return;
+            }
+        }
+    }
+
     // Crear elemento temporal
     const link = document.createElement('a');
-    link.href = documento.urlArchivo || documento.contenido;
-    link.download = documento.nombreArchivo || `documento-${documentoId}.pdf`;
+    link.href = urlDescarga;
+    link.download = documento.nombre_archivo || documento.nombreArchivo || `documento-${documentoId}.pdf`;
     link.click();
 
     mostrarToast('Descargando documento...', 'success');

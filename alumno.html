@@ -405,8 +405,9 @@
     <script src="js/supabase-utils.js"></script>
 
     <!-- Scripts de utilidades -->
-    <script src="js/storage.js"></script>
+    <!-- IMPORTANTE: storage.js debe cargar ANTES que documentos.js para que las funciones de Supabase no sean sobrescritas -->
     <script src="js/documentos.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/citas.js"></script>
     <script src="js/mensajes.js"></script>
     <script src="js/notificaciones.js"></script>

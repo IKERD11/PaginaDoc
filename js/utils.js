@@ -193,10 +193,10 @@ function calcularProgreso(documentos) {
 }
 
 // Obtener estado de documentación del alumno
-function obtenerEstadoDocumentacion(numeroControl) {
-    const documentos = JSON.parse(localStorage.getItem('documentos')) || [];
-    const docsAlumno = documentos.filter(d => d.numeroControl === numeroControl);
-    const documentosRequeridos = JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
+async function obtenerEstadoDocumentacion(numeroControl) {
+    // Usar la función async de Supabase (con fallback a localStorage)
+    const docsAlumno = await obtenerDocumentos({ numeroControl });
+    const documentosRequeridos = CONFIG.DOCUMENTOS_REQUERIDOS || JSON.parse(localStorage.getItem('documentosRequeridos')) || [];
 
     const total = documentosRequeridos.length;
     const aprobados = docsAlumno.filter(d => d.estado === 'aprobado').length;

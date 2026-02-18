@@ -281,31 +281,116 @@ function eliminarUsuario(numeroControl) {
 }
 
 // Obtener todos los usuarios
-function obtenerUsuarios(filtros = {}) {
-    let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+async function obtenerUsuarios(filtros = {}) {
+    try {
+        console.log('🔍 obtenerUsuarios llamado con filtros:', filtros);
 
-    if (filtros.rol) {
-        usuarios = usuarios.filter(u => u.rol === filtros.rol);
+        // Construir query base
+        let query = window.supabaseClient
+            .from('usuarios')
+            .select('*');
+
+        // Aplicar filtros
+        if (filtros.rol) {
+            query = query.eq('rol', filtros.rol);
+            console.log('📝 Filtro aplicado: rol =', filtros.rol);
+        }
+
+        if (filtros.activo !== undefined) {
+            query = query.eq('activo', filtros.activo);
+            console.log('📝 Filtro aplicado: activo =', filtros.activo);
+        }
+
+        // Ejecutar query
+        console.log('⏳ Ejecutando query en Supabase...');
+        const { data, error } = await query;
+
+        console.log('📦 Respuesta de Supabase:', { data, error, count: data?.length });
+
+        if (error) throw error;
+
+        let usuarios = data || [];
+        console.log(`✅ ${usuarios.length} usuarios obtenidos de Supabase`);
+
+        // Aplicar filtro de búsqueda (cliente)
+        if (filtros.busqueda) {
+            const busqueda = filtros.busqueda.toLowerCase();
+            usuarios = usuarios.filter(u =>
+                (u.nombre && u.nombre.toLowerCase().includes(busqueda)) ||
+                (u.numero_control && u.numero_control.toLowerCase().includes(busqueda)) ||
+                (u.email && u.email.toLowerCase().includes(busqueda))
+            );
+        }
+
+        // Normalizar nombres de campos (snake_case a camelCase para compatibilidad)
+        usuarios = usuarios.map(u => ({
+            ...u,
+            numeroControl: u.numero_control || u.numeroControl,
+            fechaRegistro: u.fecha_registro || u.fechaRegistro
+        }));
+
+        console.log('🎯 Usuarios finales a retornar:', usuarios.length, usuarios);
+        return usuarios;
+    } catch (error) {
+        console.error('❌ Error al obtener usuarios de Supabase:', error);
+        console.warn('⚠️ Usando fallback a localStorage');
+
+        // Fallback a localStorage si hay error
+        let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+
+        if (filtros.rol) {
+            usuarios = usuarios.filter(u => u.rol === filtros.rol);
+        }
+
+        if (filtros.activo !== undefined) {
+            usuarios = usuarios.filter(u => u.activo === filtros.activo);
+        }
+
+        if (filtros.busqueda) {
+            const busqueda = filtros.busqueda.toLowerCase();
+            usuarios = usuarios.filter(u =>
+                u.nombre.toLowerCase().includes(busqueda) ||
+                u.numeroControl.toLowerCase().includes(busqueda) ||
+                (u.email && u.email.toLowerCase().includes(busqueda))
+            );
+        }
+
+        console.log('📂 Usuarios de localStorage:', usuarios.length);
+        return usuarios;
     }
-
-    if (filtros.activo !== undefined) {
-        usuarios = usuarios.filter(u => u.activo === filtros.activo);
-    }
-
-    if (filtros.busqueda) {
-        const busqueda = filtros.busqueda.toLowerCase();
-        usuarios = usuarios.filter(u =>
-            u.nombre.toLowerCase().includes(busqueda) ||
-            u.numeroControl.toLowerCase().includes(busqueda) ||
-            (u.email && u.email.toLowerCase().includes(busqueda))
-        );
-    }
-
-    return usuarios;
 }
 
 // Obtener usuario por número de control
-function obtenerUsuarioPorNumeroControl(numeroControl) {
-    const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
-    return usuarios.find(u => u.numeroControl === numeroControl);
+async function obtenerUsuarioPorNumeroControl(numeroControl) {
+    // Validar parámetro
+    if (!numeroControl || numeroControl === 'undefined' || numeroControl === 'null') {
+        console.warn('obtenerUsuarioPorNumeroControl llamado con valor inválido:', numeroControl);
+        return null;
+    }
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('usuarios')
+            .select('*')
+            .eq('numero_control', numeroControl)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no encontrado
+
+        if (data) {
+            // Normalizar campos
+            return {
+                ...data,
+                numeroControl: data.numero_control || data.numeroControl,
+                fechaRegistro: data.fecha_registro || data.fechaRegistro
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error al obtener usuario:', error);
+        // Fallback a localStorage
+        const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+        return usuarios.find(u => u.numeroControl === numeroControl);
+    }
 }

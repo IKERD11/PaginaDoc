@@ -132,7 +132,7 @@ async function cargarDashboardAlumno() {
     cargarCitaDashboard();
 }
 
-function cargarAlertas() {
+async function cargarAlertas() {
     const usuarioActual = obtenerUsuarioActual();
     const container = document.getElementById('alertasContainer');
     const alertas = [];
@@ -154,7 +154,7 @@ function cargarAlertas() {
     }
 
     // Verificar si tiene documentos pendientes por subir
-    const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
+    const estadoDoc = await obtenerEstadoDocumentacion(usuarioActual.numeroControl);
     if (estadoDoc.sinSubir > 0) {
         alertas.push({
             tipo: 'warning',
@@ -212,7 +212,7 @@ function cargarAlertas() {
     `).join('');
 }
 
-function cargarCitaDashboard() {
+async function cargarCitaDashboard() {
     const usuarioActual = obtenerUsuarioActual();
     const citas = obtenerCitas({ numeroControl: usuarioActual.numeroControl })
         .filter(c => c.estado !== 'cancelada' && c.estado !== 'completada')
@@ -221,7 +221,7 @@ function cargarCitaDashboard() {
     const citaInfo = document.getElementById('citaInfo');
 
     if (citas.length === 0) {
-        const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
+        const estadoDoc = await obtenerEstadoDocumentacion(usuarioActual.numeroControl);
 
         if (estadoDoc.completo) {
             citaInfo.innerHTML = `
@@ -243,7 +243,7 @@ function cargarCitaDashboard() {
 
     const cita = citas[0];
     citaInfo.innerHTML = `
-        <div class="cita-info-card">
+        <div class="cita-info-card-premium">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                 <div>
                     <h4 style="margin-bottom: 10px;">
@@ -320,9 +320,9 @@ async function cargarDocumentosAlumno() {
             case 'pendiente':
                 estadoHTML = '<span class="badge badge-pendiente"><i class="fas fa-clock"></i> En revisión</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; text-align: center; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
-                        <i class="fas fa-hourglass-half" style="font-size: 40px; color: #f59e0b;"></i>
-                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9);">Tu documento está siendo revisado</p>
+                    <div class="status-box pending">
+                        <i class="fas fa-hourglass-half status-icon"></i>
+                        <p>Tu documento está siendo revisado</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn-secondary" style="flex: 1;" onclick="verVistaPrevia('${doc.documento.id}')">
                                 <i class="fas fa-eye"></i> Ver
@@ -338,9 +338,9 @@ async function cargarDocumentosAlumno() {
             case 'aprobado':
                 estadoHTML = '<span class="badge badge-aprobado"><i class="fas fa-check-circle"></i> Aprobado</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; text-align: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
-                        <i class="fas fa-check-circle" style="font-size: 40px; color: #10b981;"></i>
-                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9);"><strong>¡Documento aprobado!</strong></p>
+                    <div class="status-box approved">
+                        <i class="fas fa-check-circle status-icon"></i>
+                        <p><strong>¡Documento aprobado!</strong></p>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn-secondary" style="flex: 1;" onclick="verVistaPrevia('${doc.documento.id}')">
                                 <i class="fas fa-eye"></i> Ver
@@ -356,10 +356,10 @@ async function cargarDocumentosAlumno() {
             case 'rechazado':
                 estadoHTML = '<span class="badge badge-rechazado"><i class="fas fa-times-circle"></i> Rechazado</span>';
                 accionesHTML = `
-                    <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; backdrop-filter: blur(4px);">
-                        <i class="fas fa-times-circle" style="font-size: 40px; color: #ef4444; text-align: center; display: block;"></i>
-                        <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9); text-align: center;"><strong>Documento rechazado</strong></p>
-                        <div class="alert alert-danger" style="margin: 15px 0; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: white; padding: 12px; border-radius: 8px;">
+                    <div class="status-box rejected">
+                        <i class="fas fa-times-circle status-icon"></i>
+                        <p><strong>Documento rechazado</strong></p>
+                        <div class="alert-box danger">
                             <strong style="color: #fecaca;"><i class="fas fa-exclamation-circle"></i> Observaciones:</strong>
                             <p style="margin-top: 5px; opacity: 0.9;">${doc.documento.observaciones}</p>
                         </div>
@@ -478,7 +478,7 @@ function filtrarDocumentosAlumno(filtro) {
 }
 
 // ===== MI CITA =====
-function cargarMiCita() {
+async function cargarMiCita() {
     const usuarioActual = obtenerUsuarioActual();
     const citas = obtenerCitas({ numeroControl: usuarioActual.numeroControl })
         .sort((a, b) => new Date(b.fecha + ' ' + b.hora) - new Date(a.fecha + ' ' + a.hora));
@@ -486,7 +486,7 @@ function cargarMiCita() {
     const container = document.getElementById('citaDetalleContainer');
 
     if (citas.length === 0) {
-        const estadoDoc = obtenerEstadoDocumentacion(usuarioActual.numeroControl);
+        const estadoDoc = await obtenerEstadoDocumentacion(usuarioActual.numeroControl);
 
         if (estadoDoc.completo) {
             container.innerHTML = `
@@ -516,7 +516,7 @@ function cargarMiCita() {
         const esActiva = cita.estado !== 'cancelada' && cita.estado !== 'completada';
 
         return `
-            <div class="cita-card" style="background: white; padding: 25px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid ${esActiva ? '#2563eb' : '#9ca3af'};">
+            <div class="cita-card-item" style="border-left: 4px solid ${esActiva ? '#2563eb' : '#9ca3af'};">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                     <div>
                         <h3 style="margin-bottom: 10px; color: #111827;">
@@ -786,35 +786,4 @@ function cargarAyuda() {
 }
 
 // Estilos adicionales
-const alumnoStyles = document.createElement('style');
-alumnoStyles.textContent = `
-    .rechazado-highlight {
-        border: 2px solid #ef4444;
-        box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);
-    }
-    
-    .cita-info-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .cita-info-card h4 {
-        color: white;
-    }
-    
-    .document-upload-progress {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
-    }
-`;
-document.head.appendChild(alumnoStyles);
+

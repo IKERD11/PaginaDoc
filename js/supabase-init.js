@@ -7,8 +7,8 @@
   }
 
   // Configuración de Supabase
-  const SUPABASE_URL = 'https://enqticnrhafgewwkjvmf.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_Z9Vd1iWbszUat1MyXmJktg_eSgbrWqs';
+  const SUPABASE_URL = 'https://whemlpmqoqgwwgdjqyed.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_BcxHbxuzyoIVL-O82DNpqQ_RnNBAerz';
 
   // Crear cliente de Supabase
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

@@ -1,0 +1,161 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    NUEVO PROYECTO SUPABASE - REFERENCIA RÁPIDA                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📅 FECHA: 17 de febrero de 2026
+🎯 PROYECTO: PaginaDoc - Sistema de Gestión de Documentos Escolares
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🔐 CREDENCIALES DEL PROYECTO                                                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+URL del Proyecto:
+https://whemlpmqoqgwwgdjqyed.supabase.co
+
+Publishable API Key:
+sb_publishable_BcxHbxuzyoIVL-O82DNpqQ_RnNBAerz
+
+Password del Proyecto:
+MRFnvCeYazdADuyH
+
+⚠️  IMPORTANTE: No compartas estas credenciales públicamente
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 📋 PASOS RÁPIDOS DE CONFIGURACIÓN                                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+1️⃣  EJECUTAR SCRIPT SQL
+   • Abre: https://whemlpmqoqgwwgdjqyed.supabase.co
+   • Ve a: SQL Editor
+   • Ejecuta: CONFIGURACION-NUEVO-PROYECTO.sql
+
+2️⃣  CREAR BUCKET
+   • Ve a: Storage
+   • Crear bucket: "documentos"
+   • Configurar como: PRIVADO (no público)
+
+3️⃣  CREAR USUARIO ADMIN
+   • Ve a: Authentication > Users
+   • Crear nuevo usuario con email y password
+   • Copiar el UUID del usuario
+   • Ejecutar en SQL Editor:
+     INSERT INTO public.usuarios (id, email, nombre, rol)
+     VALUES ('UUID-COPIADO', 'admin@ejemplo.com', 'Admin', 'admin');
+
+4️⃣  VERIFICAR
+   • El código ya está actualizado con las nuevas credenciales
+   • js/supabase-init.js contiene las credenciales correctas
+   • Abre index.html y prueba el login
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 📁 ARCHIVOS CLAVE                                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+✅ CONFIGURACION-NUEVO-PROYECTO.sql
+   → Script SQL completo para configurar todo el proyecto
+
+✅ NUEVO-PROYECTO-README.md
+   → Documentación completa con instrucciones detalladas paso a paso
+
+✅ js/supabase-init.js
+   → Archivo de inicialización con las nuevas credenciales (YA ACTUALIZADO)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✨ MEJORAS DE ESTE PROYECTO                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+✅ Sin recursión infinita en políticas RLS
+✅ Nombres de columnas consistentes (snake_case)
+✅ Políticas de Storage simplificadas y funcionales
+✅ Sincronización automática de roles en JWT
+✅ Triggers para actualizar timestamps automáticamente
+✅ Mejor rendimiento y estabilidad
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🗄️ ESTRUCTURA DE TABLAS                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+TABLA: usuarios
+├─ id (UUID)
+├─ email (TEXT)
+├─ nombre (TEXT)
+├─ rol (TEXT: 'admin' | 'alumno')
+├─ numero_control (TEXT)
+├─ created_at (TIMESTAMP)
+└─ updated_at (TIMESTAMP)
+
+TABLA: documentos
+├─ id (UUID)
+├─ numero_control (TEXT)
+├─ tipo_documento (TEXT)
+├─ nombre_archivo (TEXT)
+├─ url_archivo (TEXT)
+├─ ruta_archivo (TEXT)
+├─ estado (TEXT: 'pendiente' | 'aprobado' | 'rechazado')
+├─ observaciones (TEXT)
+├─ revisado_por (TEXT)
+├─ fecha_carga (TIMESTAMP)
+├─ fecha_revision (TIMESTAMP)
+├─ fecha_creacion (TIMESTAMP)
+└─ fecha_actualizacion (TIMESTAMP)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🔍 CONSULTAS SQL ÚTILES                                                      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+-- Ver todos los usuarios
+SELECT * FROM usuarios;
+
+-- Ver todos los documentos
+SELECT * FROM documentos;
+
+-- Ver documentos pendientes
+SELECT * FROM documentos WHERE estado = 'pendiente';
+
+-- Ver políticas RLS
+SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public';
+
+-- Verificar rol de un usuario
+SELECT email, rol FROM usuarios WHERE email = 'tu-email@ejemplo.com';
+
+-- Contar documentos por estado
+SELECT estado, COUNT(*) FROM documentos GROUP BY estado;
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🆘 SOLUCIÓN RÁPIDA DE PROBLEMAS                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+❌ Error: "Failed to fetch"
+   → Verifica que las credenciales en js/supabase-init.js sean correctas
+   → Verifica que el script esté cargado antes que otros archivos JS
+
+❌ Error: "Row level security policy violation"
+   → Verifica que el usuario esté autenticado
+   → Verifica que el rol esté sincronizado: SELECT * FROM usuarios WHERE id = auth.uid();
+
+❌ Error: "Column does not exist"
+   → Usa snake_case: numero_control en lugar de numeroControl
+   → Ejecuta: SELECT column_name FROM information_schema.columns WHERE table_name = 'documentos';
+
+❌ Error al subir archivos
+   → Verifica que el bucket 'documentos' exista
+   → Verifica que el bucket sea PRIVADO (no público)
+   → Ejecuta las políticas de storage del script SQL
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✅ LISTA DE VERIFICACIÓN                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+[ ] Script SQL ejecutado completamente
+[ ] Bucket 'documentos' creado como privado
+[ ] Usuario admin creado y registrado
+[ ] Login funciona correctamente
+[ ] Subida de documentos funciona
+[ ] Revisión de documentos funciona
+[ ] Sin errores en consola del navegador
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                       ¡PROYECTO LISTO PARA USAR!                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Para más información, consulta: NUEVO-PROYECTO-README.md

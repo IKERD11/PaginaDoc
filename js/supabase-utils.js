@@ -27,10 +27,9 @@ async function subirArchivoSupabase(archivo, ruta, onProgress = null) {
             throw error;
         }
 
-        // Obtener URL pública del archivo
-        const { data: { publicUrl } } = window.supabaseClient.storage
-            .from('documentos')
-            .getPublicUrl(ruta);
+        // NOTA: Para bucket privado, no usamos getPublicUrl.
+        // La URL se generará con createSignedUrl cuando se necesite ver/descargar.
+        // Aquí solo devolvemos la ruta para guardarla en la BD.
 
         // Simular progreso completo
         if (onProgress) {
@@ -39,7 +38,8 @@ async function subirArchivoSupabase(archivo, ruta, onProgress = null) {
 
         return {
             exito: true,
-            url: publicUrl
+            url: ruta,  // Devolver la ruta, no una URL pública
+            ruta: ruta
         };
     } catch (error) {
         console.error('Error al subir archivo:', error);

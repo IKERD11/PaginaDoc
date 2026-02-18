@@ -283,46 +283,56 @@
             <section id="reportes-section" class="content-section">
                 <div class="section-header">
                     <h2><i class="fas fa-chart-bar"></i> Reportes y Estadísticas</h2>
+                    <p>Genera y descarga reportes detallados del sistema</p>
                 </div>
 
-                <div class="reportes-filters">
-                    <div class="form-group">
-                        <label>Tipo de Reporte:</label>
-                        <select id="tipoReporte">
-                            <option value="general">General</option>
-                            <option value="documentos">Documentos</option>
-                            <option value="citas">Citas</option>
-                            <option value="alumnos">Alumnos</option>
-                        </select>
-                    </div>
+                <div class="glass-card fade-in">
+                    <div class="reportes-grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-filter"></i> Tipo de Reporte</label>
+                            <div class="input-wrapper">
+                                <select id="tipoReporte" class="input-glass">
+                                    <option value="general">General</option>
+                                    <option value="documentos">Documentos</option>
+                                    <option value="citas">Citas</option>
+                                    <option value="alumnos">Alumnos</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label>Fecha Inicio:</label>
-                        <input type="date" id="fechaInicio">
-                    </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Fecha Inicio</label>
+                            <input type="date" id="fechaInicio" class="input-glass">
+                        </div>
 
-                    <div class="form-group">
-                        <label>Fecha Fin:</label>
-                        <input type="date" id="fechaFin">
-                    </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Fecha Fin</label>
+                            <input type="date" id="fechaFin" class="input-glass">
+                        </div>
 
-                    <div class="form-group">
-                        <button class="btn-primary" id="generarReporte">
-                            <i class="fas fa-chart-bar"></i> Generar Reporte
-                        </button>
+                        <div class="form-group report-actions">
+                            <button class="btn-primary" id="generarReporte"
+                                style="width: 100%; height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fas fa-bolt"></i> Generar Reporte
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="reportes-export">
+                <div class="export-actions glass-container-light fade-in"
+                    style="margin-top: 20px; padding: 15px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-radius: 12px;">
+                    <span style="margin-right: auto; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-download"></i> Exportar Resultados:
+                    </span>
                     <button class="btn-secondary" id="exportPDF">
-                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                        <i class="fas fa-file-pdf"></i> PDF
                     </button>
                     <button class="btn-secondary" id="exportExcel">
-                        <i class="fas fa-file-excel"></i> Exportar Excel
+                        <i class="fas fa-file-excel"></i> Excel
                     </button>
                 </div>
 
-                <div id="reporteContainer" class="reporte-contenido">
+                <div id="reporteContainer" class="reporte-contenido fade-in" style="margin-top: 30px;">
                     <!-- Se llenará dinámicamente -->
                 </div>
             </section>
@@ -337,6 +347,7 @@
                     <button class="tab-btn active" data-tab="documentos-req">Documentos Requeridos</button>
                     <button class="tab-btn" data-tab="usuarios">Usuarios</button>
                     <button class="tab-btn" data-tab="periodos">Periodos</button>
+                    <button class="tab-btn" data-tab="migracion">Migración de Datos</button>
                     <button class="tab-btn" data-tab="bitacora">Bitácora</button>
                 </div>
 
@@ -388,6 +399,44 @@
                         </button>
                     </div>
 
+                    <div id="migracion-tab" class="tab-content">
+                        <h3><i class="fas fa-database"></i> Migración de Datos a Supabase</h3>
+                        <div class="form-container" style="margin-bottom: 24px;">
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px;">
+                                Esta herramienta migra todos los datos almacenados en localStorage (navegador) a la base
+                                de datos de Supabase.
+                                Esto incluye usuarios, documentos y otra información del sistema.
+                            </p>
+
+                            <div class="migration-warning-box">
+                                <p class="migration-warning-title">
+                                    <i class="fas fa-exclamation-triangle"></i> Importante
+                                </p>
+                                <p class="migration-warning-text">
+                                    La migración no elimina los datos de localStorage. Los datos permanecerán como
+                                    respaldo.
+                                </p>
+                            </div>
+
+                            <div id="migracionStatus" style="margin-bottom: 20px; display: none;">
+                                <!-- Se llenará con el estado de la migración -->
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                                <button class="btn-primary" id="btnEjecutarMigracion">
+                                    <i class="fas fa-play"></i> Ejecutar Migración Completa
+                                </button>
+                                <button class="btn-secondary" id="btnVerificarMigracion">
+                                    <i class="fas fa-check-circle"></i> Verificar Estado
+                                </button>
+                            </div>
+
+                            <div id="migracionResultados" class="form-container" style="display: none;">
+                                <!-- Se llenará con los resultados -->
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="bitacora-tab" class="tab-content">
                         <h3>Bitácora de Acciones</h3>
                         <div class="filter-bar">
@@ -428,14 +477,20 @@
     <script src="js/supabase-utils.js"></script>
 
     <!-- Scripts de utilidades -->
-    <script src="js/storage.js"></script>
+    <!-- IMPORTANTE: storage.js debe cargar ANTES que documentos.js para que las funciones de Supabase no sean sobrescritas -->
     <script src="js/documentos.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/citas.js"></script>
     <script src="js/mensajes.js"></script>
     <script src="js/notificaciones.js"></script>
-    <script src="js/reportes.js"></script>
     <script src="js/gestor-archivos.js"></script>
     <script src="js/visor-documentos.js"></script>
+
+    <!-- Reportes y gráficas -->
+    <script src="js/reportes.js"></script>
+
+    <!-- Utilidad de migración -->
+    <script src="js/migracion.js"></script>
 
     <!-- Panel administrativo -->
     <script src="js/admin.js"></script>

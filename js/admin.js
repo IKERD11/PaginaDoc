@@ -78,7 +78,7 @@ async function navegarASeccion(seccion) {
             await cargarReportes();
             break;
         case 'configuracion':
-            cargarConfiguracion();
+            await cargarConfiguracion();
             break;
     }
 }
@@ -104,9 +104,19 @@ function inicializarEventos() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.getElementById(`${tab}-tab`).classList.add('active');
+            document.getElementById(`${tab}-tab`)?.classList.add('active');
         });
     });
+
+    // Botones de migración
+    document.getElementById('btnEjecutarMigracion')?.addEventListener('click', async () => {
+        await ejecutarMigracionUI();
+    });
+
+    document.getElementById('btnVerificarMigracion')?.addEventListener('click', async () => {
+        await verificarMigracionUI();
+    });
+
     document.getElementById('btnNuevoAlumno').addEventListener('click', mostrarModalNuevoAlumno);
     document.getElementById('btnNuevaCita').addEventListener('click', mostrarModalNuevaCita);
     document.getElementById('btnNuevoMensaje').addEventListener('click', mostrarModalNuevoMensaje);
@@ -125,8 +135,57 @@ function cargarDashboard() {
     cargarCitasProximas();
 }
 
-function actualizarEstadisticas() {
-    const stats = obtenerEstadisticas();
+async function obtenerEstadisticas() {
+    try {
+        // Obtener todos los alumnos
+        const alumnos = await obtenerUsuarios({ rol: 'alumno' });
+
+        // Obtener todos los documentos
+        const { data: documentos, error } = await window.supabaseClient
+            .from('documentos')
+            .select('*');
+
+        if (error) {
+            console.error('Error al obtener documentos:', error);
+        }
+
+        const docs = documentos || [];
+
+        // Calcular estadísticas
+        const totalAlumnos = alumnos.length;
+
+        // Contar alumnos con documentación completa
+        let alumnosCompletos = 0;
+        for (const alumno of alumnos) {
+            const estado = await obtenerEstadoDocumentacion(alumno.numeroControl);
+            if (estado.completo) {
+                alumnosCompletos++;
+            }
+        }
+
+        // Contar documentos pendientes y rechazados
+        const documentosPendientes = docs.filter(d => d.estado === 'pendiente').length;
+        const documentosRechazados = docs.filter(d => d.estado === 'rechazado').length;
+
+        return {
+            totalAlumnos,
+            alumnosCompletos,
+            documentosPendientes,
+            documentosRechazados
+        };
+    } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+        return {
+            totalAlumnos: 0,
+            alumnosCompletos: 0,
+            documentosPendientes: 0,
+            documentosRechazados: 0
+        };
+    }
+}
+
+async function actualizarEstadisticas() {
+    const stats = await obtenerEstadisticas();
 
     document.getElementById('totalAlumnos').textContent = stats.totalAlumnos;
     document.getElementById('alumnosCompletos').textContent = stats.alumnosCompletos;
@@ -135,8 +194,13 @@ function actualizarEstadisticas() {
 }
 
 function cargarGraficasDashboard() {
-    const datos = obtenerDatosGraficas();
-    generarGraficaBarras(datos.documentacion, 'chartDocumentacion');
+    // Verificar que la función existe antes de llamarla
+    if (typeof obtenerDatosGraficas === 'function') {
+        const datos = obtenerDatosGraficas();
+        generarGraficaBarras(datos.documentacion, 'chartDocumentacion');
+    } else {
+        console.warn('obtenerDatosGraficas no está definida');
+    }
 }
 
 function cargarCitasProximas() {
@@ -160,18 +224,38 @@ function cargarCitasProximas() {
 }
 
 // ===== ALUMNOS =====
-function cargarAlumnos() {
-    const alumnos = obtenerUsuarios({ rol: 'alumno' });
-    const tbody = document.getElementById('alumnosTableBody');
+async function cargarAlumnos() {
+    try {
+        console.log('🔍 Cargando alumnos...');
+        const alumnos = await obtenerUsuarios({ rol: 'alumno' });
+        console.log('📊 Alumnos obtenidos:', alumnos.length, alumnos);
+        const tbody = document.getElementById('alumnosTableBody');
 
-    if (alumnos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay alumnos registrados</td></tr>';
-        return;
-    }
+        if (alumnos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay alumnos registrados</td></tr>';
+            console.warn('⚠️ No se encontraron alumnos');
+            return;
+        }
 
-    tbody.innerHTML = alumnos.map(alumno => {
-        const estado = obtenerEstadoDocumentacion(alumno.numeroControl);
-        return `
+        // Process alumnos with await for async obtenerEstadoDocumentacion
+        const alumnosConEstado = await Promise.all(alumnos.map(async (alumno) => {
+            try {
+                const estado = await obtenerEstadoDocumentacion(alumno.numeroControl);
+                return { alumno, estado };
+            } catch (error) {
+                console.error(`❌ Error al obtener estado de ${alumno.numeroControl}:`, error);
+                // Return default estado if error
+                return {
+                    alumno,
+                    estado: { progreso: 0, completo: false }
+                };
+            }
+        }));
+
+        console.log('📋 Alumnos con estado procesados:', alumnosConEstado.length);
+
+        tbody.innerHTML = alumnosConEstado.map(({ alumno, estado }) => {
+            return `
             <tr>
                 <td>${alumno.numeroControl}</td>
                 <td>${alumno.nombre}</td>
@@ -190,18 +274,25 @@ function cargarAlumnos() {
                 </td>
             </tr>
         `;
-    }).join('');
+        }).join('');
 
-    // Filtros
-    document.getElementById('searchAlumno').addEventListener('input', filtrarAlumnos);
-    document.getElementById('filterEstado').addEventListener('change', filtrarAlumnos);
+        console.log('✅ Tabla de alumnos actualizada');
+
+        // Filtros
+        document.getElementById('searchAlumno').addEventListener('input', filtrarAlumnos);
+        document.getElementById('filterEstado').addEventListener('change', filtrarAlumnos);
+    } catch (error) {
+        console.error('❌ Error crítico en cargarAlumnos:', error);
+        const tbody = document.getElementById('alumnosTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color: red;">Error al cargar alumnos. Ver consola para detalles.</td></tr>';
+    }
 }
 
-function filtrarAlumnos() {
+async function filtrarAlumnos() {
     const busqueda = document.getElementById('searchAlumno').value.toLowerCase();
     const estado = document.getElementById('filterEstado').value;
 
-    let alumnos = obtenerUsuarios({ rol: 'alumno' });
+    let alumnos = await obtenerUsuarios({ rol: 'alumno' });
 
     if (busqueda) {
         alumnos = alumnos.filter(a =>
@@ -211,18 +302,30 @@ function filtrarAlumnos() {
     }
 
     if (estado) {
-        alumnos = alumnos.filter(a => {
-            const estadoDoc = obtenerEstadoDocumentacion(a.numeroControl);
-            if (estado === 'completo') return estadoDoc.completo;
-            if (estado === 'incompleto') return !estadoDoc.completo && estadoDoc.sinSubir < estadoDoc.total;
-            if (estado === 'pendiente') return estadoDoc.sinSubir === estadoDoc.total;
-            return true;
-        });
+        // Need to await for each alumno's estado
+        const alumnosConEstado = await Promise.all(alumnos.map(async (a) => {
+            const estadoDoc = await obtenerEstadoDocumentacion(a.numeroControl);
+            return { alumno: a, estadoDoc };
+        }));
+
+        alumnos = alumnosConEstado
+            .filter(({ estadoDoc }) => {
+                if (estado === 'completo') return estadoDoc.completo;
+                if (estado === 'incompleto') return !estadoDoc.completo && estadoDoc.sinSubir < estadoDoc.total;
+                if (estado === 'pendiente') return estadoDoc.sinSubir === estadoDoc.total;
+                return true;
+            })
+            .map(({ alumno }) => alumno);
     }
 
+    // Process alumnos with await for rendering
+    const alumnosConEstado = await Promise.all(alumnos.map(async (alumno) => {
+        const estadoDoc = await obtenerEstadoDocumentacion(alumno.numeroControl);
+        return { alumno, estadoDoc };
+    }));
+
     const tbody = document.getElementById('alumnosTableBody');
-    tbody.innerHTML = alumnos.map(alumno => {
-        const estadoDoc = obtenerEstadoDocumentacion(alumno.numeroControl);
+    tbody.innerHTML = alumnosConEstado.map(({ alumno, estadoDoc }) => {
         return `
             <tr>
                 <td>${alumno.numeroControl}</td>
@@ -245,9 +348,9 @@ function filtrarAlumnos() {
     }).join('');
 }
 
-function verDetalleAlumno(numeroControl) {
-    const alumno = obtenerUsuarioPorNumeroControl(numeroControl);
-    const documentos = obtenerDocumentosAlumno(numeroControl);
+async function verDetalleAlumno(numeroControl) {
+    const alumno = await obtenerUsuarioPorNumeroControl(numeroControl);
+    const documentos = await obtenerDocumentosAlumno(numeroControl);
     const citas = obtenerCitas({ numeroControl });
 
     const contenido = `
@@ -321,7 +424,7 @@ function mostrarModalNuevoAlumno() {
     ]);
 }
 
-function crearNuevoAlumno() {
+async function crearNuevoAlumno() {
     const numeroControl = document.getElementById('nuevoNumeroControl').value;
     const nombre = document.getElementById('nuevoNombre').value;
     const email = document.getElementById('nuevoEmail').value;
@@ -338,16 +441,16 @@ function crearNuevoAlumno() {
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
-        cargarAlumnos();
+        await cargarAlumnos();
     } else {
         mostrarToast(resultado.mensaje, 'error');
     }
 }
 
 // ===== DOCUMENTOS =====
-function cargarDocumentosRevision() {
+async function cargarDocumentosRevision() {
     // Poblar select de alumnos
-    const alumnos = obtenerUsuarios({ rol: 'alumno' });
+    const alumnos = await obtenerUsuarios({ rol: 'alumno' });
     const selectAlumno = document.getElementById('filterAlumnoDocumentos');
 
     selectAlumno.innerHTML = '<option value="">Todos los alumnos</option>' +
@@ -378,7 +481,7 @@ async function mostrarDocumentosRevision() {
 
     // Si hay una búsqueda exacta o un alumno seleccionado, mostrar el expediente
     if (busqueda && busqueda.length >= 4) {
-        const alumno = buscarAlumnoPorCriterio(busqueda);
+        const alumno = await buscarAlumnoPorCriterio(busqueda);
         if (alumno) {
             await mostrarExpedienteAlumno(alumno, estado);
             return;
@@ -386,7 +489,7 @@ async function mostrarDocumentosRevision() {
     }
 
     if (numeroControlSelect) {
-        const alumno = obtenerUsuarioPorNumeroControl(numeroControlSelect);
+        const alumno = await obtenerUsuarioPorNumeroControl(numeroControlSelect);
         if (alumno) {
             await mostrarExpedienteAlumno(alumno, estado);
             return;
@@ -403,11 +506,18 @@ async function mostrarDocumentosRevision() {
         documentos = documentos.filter(d => d.estado === estado);
     }
     if (busqueda) {
+        // Para búsqueda, obtener todos los usuarios primero
+        const todosUsuarios = await obtenerUsuarios({ rol: 'alumno' });
+        const usuariosMap = {};
+        todosUsuarios.forEach(u => {
+            usuariosMap[u.numeroControl || u.numero_control] = u;
+        });
+
         documentos = documentos.filter(d => {
-            const alumno = obtenerUsuarioPorNumeroControl(d.numeroControl);
-            const nombre = alumno ? alumno.nombre.toLowerCase() : '';
-            const numControl = d.numeroControl.toLowerCase();
-            const email = alumno ? alumno.email.toLowerCase() : '';
+            const alumno = usuariosMap[d.numeroControl];
+            const nombre = alumno ? (alumno.nombre || '').toLowerCase() : '';
+            const numControl = (d.numeroControl || '').toLowerCase();
+            const email = alumno ? (alumno.email || '').toLowerCase() : '';
             return nombre.includes(busqueda) || numControl.includes(busqueda) || email.includes(busqueda);
         });
     }
@@ -428,15 +538,27 @@ async function mostrarDocumentosRevision() {
     // AGRUPAR POR ALUMNO
     const grupos = {};
     documentos.forEach(doc => {
-        if (!grupos[doc.numeroControl]) {
-            grupos[doc.numeroControl] = [];
+        const nc = doc.numeroControl || doc.numero_control;
+        if (!grupos[nc]) {
+            grupos[nc] = [];
         }
-        grupos[doc.numeroControl].push(doc);
+        grupos[nc].push(doc);
+    });
+
+    // Obtener todos los alumnos para mapeo rápido
+    const todosUsuarios = await obtenerUsuarios({ rol: 'alumno' });
+
+    const usuariosMap = {};
+    todosUsuarios.forEach(u => {
+        const nc = u.numeroControl || u.numero_control;
+        if (nc) {
+            usuariosMap[nc] = u;
+        }
     });
 
     container.innerHTML = Object.keys(grupos).map(numControl => {
         const docs = grupos[numControl];
-        const alumno = obtenerUsuarioPorNumeroControl(numControl) || { nombre: 'Desconocido', numeroControl: numControl };
+        const alumno = usuariosMap[numControl] || { nombre: 'Desconocido', numeroControl: numControl };
 
         const total = docs.length;
         const aprobados = docs.filter(d => d.estado === 'aprobado').length;
@@ -492,7 +614,7 @@ async function mostrarDocumentosRevision() {
                                 <i class="fas fa-clock"></i> REVISIÓN PENDIENTE
                             </div>
                         ` : `
-                            <div class="badge-resumen-pendiente" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
+                            <div class="badge-resumen-revisado">
                                 <i class="fas fa-check-circle"></i> REVISADO
                             </div>
                         `}
@@ -629,7 +751,7 @@ function cargarProximasCitasAdmin() {
     }
 
     container.innerHTML = citas.map(cita => `
-        <div class="cita-card" style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div class="cita-card-item">
             <div style="display: flex; justify-content: space-between; align-items: start;">
                 <div>
                     <h4>${cita.nombreAlumno}</h4>
@@ -663,8 +785,8 @@ function cargarProximasCitasAdmin() {
     `).join('');
 }
 
-function mostrarModalNuevaCita() {
-    const alumnos = obtenerUsuarios({ rol: 'alumno' }).filter(a => validarDocumentacionCompleta(a.numeroControl));
+async function mostrarModalNuevaCita() {
+    const alumnos = (await obtenerUsuarios({ rol: 'alumno' })).filter(a => validarDocumentacionCompleta(a.numeroControl));
 
     if (alumnos.length === 0) {
         mostrarToast('No hay alumnos con documentación completa para agendar citas', 'warning');
@@ -724,7 +846,7 @@ function crearNuevaCitaAdmin() {
 }
 
 // ===== MENSAJES =====
-function cargarMensajesAdmin() {
+async function cargarMensajesAdmin() {
     const mensajes = obtenerMensajes({ numeroControl: 'ADMIN' });
     const container = document.getElementById('mensajesListContainer');
 
@@ -735,8 +857,21 @@ function cargarMensajesAdmin() {
 
     const activeId = window.selectedMessageId;
 
+    // Obtener todos los remitentes de una vez
+    const remitentesUnicos = [...new Set(mensajes.map(m => m.de))];
+    const remitentesMap = {};
+
+    await Promise.all(remitentesUnicos.map(async (de) => {
+        if (de && de !== 'ADMIN' && de !== 'SISTEMA') {
+            const usuario = await obtenerUsuarioPorNumeroControl(de);
+            if (usuario) {
+                remitentesMap[de] = usuario;
+            }
+        }
+    }));
+
     container.innerHTML = mensajes.map(m => {
-        const remitente = obtenerUsuarioPorNumeroControl(m.de);
+        const remitente = remitentesMap[m.de];
         const isActive = m.id === activeId ? 'active' : '';
 
         return `
@@ -752,7 +887,7 @@ function cargarMensajesAdmin() {
     }).join('');
 }
 
-function verMensajeDetalle(mensajeId) {
+async function verMensajeDetalle(mensajeId) {
     const mensaje = obtenerConversacion(mensajeId);
     marcarMensajeLeido(mensajeId);
     window.selectedMessageId = mensajeId;
@@ -766,7 +901,7 @@ function verMensajeDetalle(mensajeId) {
         }
     });
 
-    const remitente = obtenerUsuarioPorNumeroControl(mensaje.de);
+    const remitente = await obtenerUsuarioPorNumeroControl(mensaje.de);
     const usuarioActual = obtenerUsuarioActual();
 
     const container = document.getElementById('mensajeDetalleContainer');
@@ -833,8 +968,8 @@ function enviarRespuestaMensaje(mensajeId) {
     }
 }
 
-function mostrarModalNuevoMensaje() {
-    const alumnos = obtenerUsuarios({ rol: 'alumno' });
+async function mostrarModalNuevoMensaje() {
+    const alumnos = await obtenerUsuarios({ rol: 'alumno' });
 
     const contenido = `
         <form id="formNuevoMensaje">
@@ -880,7 +1015,7 @@ function mostrarModalNuevoMensaje() {
     ]);
 }
 
-function enviarNuevoMensajeAdmin() {
+async function enviarNuevoMensajeAdmin() {
     const destinatario = document.getElementById('mensajeDestinatario').value;
     const asunto = document.getElementById('mensajeAsunto').value;
     const contenido = document.getElementById('mensajeContenido').value;
@@ -891,15 +1026,15 @@ function enviarNuevoMensajeAdmin() {
     let resultado;
 
     if (destinatario === 'TODOS') {
-        resultado = enviarMensajeMasivo(asunto, contenido);
+        resultado = await enviarMensajeMasivo(asunto, contenido);
     } else {
-        resultado = crearMensaje(usuarioActual.numeroControl, destinatario, asunto, contenido, categoria);
+        resultado = await crearMensaje(usuarioActual.numeroControl, destinatario, asunto, contenido, categoria);
     }
 
     if (resultado.exito) {
         mostrarToast(resultado.mensaje, 'success');
         cerrarModal();
-        cargarMensajesAdmin();
+        await cargarMensajesAdmin();
     } else {
         mostrarToast(resultado.mensaje, 'error');
     }
@@ -955,6 +1090,12 @@ function generarReporteSeleccionado() {
 
 function mostrarReporte(reporte) {
     const container = document.getElementById('reporteContainer');
+
+    if (!reporte || !reporte.tipo) {
+        console.error('Reporte inválido o no generado', reporte);
+        container.innerHTML = '<div class="alert alert-danger">Error al generar el reporte</div>';
+        return;
+    }
 
     let html = `
         <div class="reporte-generado">
@@ -1014,9 +1155,9 @@ function exportarReporteExcelActual() {
 }
 
 // ===== CONFIGURACIÓN =====
-function cargarConfiguracion() {
+async function cargarConfiguracion() {
     cargarDocumentosRequeridos();
-    cargarUsuariosConfig();
+    await cargarUsuariosConfig();
     cargarPeriodoConfig();
     cargarBitacora();
 }
@@ -1127,8 +1268,8 @@ function eliminarDocumentoRequerido(id) {
     );
 }
 
-function cargarUsuariosConfig() {
-    const usuarios = obtenerUsuarios();
+async function cargarUsuariosConfig() {
+    const usuarios = await obtenerUsuarios();
     const container = document.getElementById('usuariosList');
 
     container.innerHTML = usuarios.map(u => `
@@ -1164,14 +1305,14 @@ function cargarUsuariosConfig() {
     `).join('');
 }
 
-function eliminarUsuarioConfig(numeroControl) {
+async function eliminarUsuarioConfig(numeroControl) {
     confirmar(
         'Eliminar Usuario',
         '¿Estás seguro? Se eliminarán todos sus datos.',
-        () => {
+        async () => {
             eliminarUsuario(numeroControl);
             mostrarToast('Usuario eliminado', 'success');
-            cargarUsuariosConfig();
+            await cargarUsuariosConfig();
         }
     );
 }
@@ -1279,8 +1420,8 @@ const estadoColors = {
     }
 };
 
-function buscarAlumnoPorCriterio(criterio) {
-    const alumnos = obtenerUsuarios({ rol: 'alumno' });
+async function buscarAlumnoPorCriterio(criterio) {
+    const alumnos = await obtenerUsuarios({ rol: 'alumno' });
     const criterioLower = criterio.toLowerCase().trim();
 
     // Buscar por número de control exacto
@@ -1389,7 +1530,7 @@ async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
             </div>
 
             <div class="documentos-grid">
-                ${docsAlumno.map(doc => {
+                ${(await Promise.all(docsAlumno.map(async doc => {
         const subido = doc.subido;
         const iconClass = getDocIcon(doc.nombre);
 
@@ -1416,7 +1557,30 @@ async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
         // Documento subido
         const realDoc = doc.documento;
         const config = estadoColors[realDoc.estado || 'pendiente'];
-        const urlArchivo = realDoc.contenido || realDoc.urlArchivo;
+        let urlArchivo = realDoc.url_archivo || realDoc.contenido || realDoc.urlArchivo;
+
+        // Si es una URL pública de Supabase Storage (legacy), extraer la ruta
+        if (urlArchivo && urlArchivo.includes('/storage/v1/object/public/documentos/')) {
+            const match = urlArchivo.match(/\/documentos\/(.+?)(?:\?|$)/);
+            if (match && match[1]) {
+                urlArchivo = match[1];
+            }
+        }
+
+        // Si es una ruta (no URL completa de datos/blob), generar URL firmada
+        if (urlArchivo && !urlArchivo.startsWith('data:') && !urlArchivo.startsWith('blob:')) {
+            if (!urlArchivo.startsWith('http') || urlArchivo.includes('/storage/v1/object/')) {
+                try {
+                    const resultado = await obtenerURLDescargaSupabase(urlArchivo);
+                    if (resultado.exito) {
+                        urlArchivo = resultado.url;
+                    }
+                } catch (error) {
+                    console.error('Error al generar URL firmada:', error);
+                }
+            }
+        }
+
         const esPDF = realDoc.tipo && realDoc.tipo.includes('pdf');
 
         return `
@@ -1428,7 +1592,7 @@ async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
                                     </div>
                                     <div class="doc-title-info">
                                         <h4 style="margin: 0; color: white;">${doc.nombre}</h4>
-                                        <p class="doc-filename"><i class="fas fa-file-pdf"></i> ${realDoc.nombreArchivo || 'documento.pdf'}</p>
+                                        <p class="doc-filename"><i class="fas fa-file-pdf"></i> ${realDoc.nombre_archivo || realDoc.nombreArchivo || 'documento.pdf'}</p>
                                     </div>
                                 </div>
                                 <div class="doc-status-badge">
@@ -1439,15 +1603,31 @@ async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
                             </div>
 
                             <div class="doc-info-bar">
-                                <span><i class="fas fa-calendar-alt"></i> Subido: ${formatearFechaHora(realDoc.fechaCarga)}</span>
-                                ${realDoc.fechaRevision ? `<span><i class="fas fa-user-check"></i> Revisado: ${formatearFecha(realDoc.fechaRevision)}</span>` : ''}
+                                <span><i class="fas fa-calendar-alt"></i> Subido: ${formatearFechaHora(realDoc.fecha_carga || realDoc.fechaCarga)}</span>
+                                ${(realDoc.fecha_revision || realDoc.fechaRevision) ? `<span><i class="fas fa-user-check"></i> Revisado: ${formatearFecha(realDoc.fecha_revision || realDoc.fechaRevision)}</span>` : ''}
                             </div>
 
-                            <div class="doc-preview-area">
-                                ${esPDF ? `
-                                    <iframe src="${urlArchivo}" class="doc-preview-embed"></iframe>
+                            <div class="doc-preview-area" id="preview-${realDoc.id}">
+                                <div class="doc-loading-spinner">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: rgba(255,255,255,0.5);"></i>
+                                    <p style="color: rgba(255,255,255,0.7); margin-top: 20px;">Cargando documento...</p>
+                                </div>
+                                ${urlArchivo ? `
+                                    <iframe 
+                                        src="${urlArchivo}#toolbar=0&navpanes=0&scrollbar=1" 
+                                        class="doc-preview-embed"
+                                        onload="document.getElementById('preview-${realDoc.id}').querySelector('.doc-loading-spinner').style.display='none';"
+                                        onerror="handlePreviewError('${realDoc.id}', '${urlArchivo}')"
+                                        style="display: block;"
+                                    ></iframe>
                                 ` : `
-                                    <img src="${urlArchivo}" class="doc-preview-img">
+                                    <div class="doc-preview-placeholder">
+                                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #f59e0b; margin-bottom: 15px;"></i>
+                                        <p style="color: rgba(255,255,255,0.7);">No se pudo cargar la vista previa del documento</p>
+                                        <button class="btn-secondary" onclick="descargarDocumento('${realDoc.id}')" style="margin-top: 15px;">
+                                            <i class="fas fa-download"></i> Descargar documento
+                                        </button>
+                                    </div>
                                 `}
                             </div>
 
@@ -1484,9 +1664,193 @@ async function mostrarExpedienteAlumno(alumno, filtroEstado = '') {
                             </div>
                         </div>
                     `;
-    }).join('')}
+    }))).join('')}
             </div>
         </div>
     `;
 }
 
+// Función para manejar errores de carga de vista previa
+function handlePreviewError(documentoId, urlArchivo) {
+    const previewContainer = document.getElementById(`preview-${documentoId}`);
+    if (previewContainer) {
+        const spinner = previewContainer.querySelector('.doc-loading-spinner');
+        if (spinner) spinner.style.display = 'none';
+
+        const iframe = previewContainer.querySelector('iframe');
+        if (iframe) iframe.style.display = 'none';
+
+        // Mostrar mensaje de error con opción de descarga
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'doc-preview-placeholder';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f59e0b; margin-bottom: 15px;"></i>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 10px;">No se pudo cargar la vista previa</p>
+            <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 20px;">Esto puede deberse a restricciones de seguridad del navegador</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn-primary" onclick="window.open('${urlArchivo}', '_blank')">
+                    <i class="fas fa-external-link-alt"></i> Abrir en nueva pestaña
+                </button>
+                <button class="btn-secondary" onclick="descargarDocumento('${documentoId}')">
+                    <i class="fas fa-download"></i> Descargar
+                </button>
+            </div>
+        `;
+        previewContainer.appendChild(errorDiv);
+    }
+}
+
+// ===== FUNCIONES DE MIGRACIÓN UI =====
+async function ejecutarMigracionUI() {
+    const statusDiv = document.getElementById('migracionStatus');
+    const resultadosDiv = document.getElementById('migracionResultados');
+    const btnEjecutar = document.getElementById('btnEjecutarMigracion');
+
+    // Mostrar estado de carga
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--accent-color); margin-bottom: 12px;"></i>
+            <p style="color: rgba(255,255,255,0.9); font-weight: 600;">Ejecutando migración...</p>
+            <p style="color: rgba(255,255,255,0.6); font-size: 14px;">Esto puede tomar unos momentos</p>
+        </div>
+    `;
+
+    // Deshabilitar botón
+    btnEjecutar.disabled = true;
+
+    try {
+        // Ejecutar migración
+        const resultados = await ejecutarMigracionCompleta();
+
+        // Ocultar estado de carga
+        statusDiv.style.display = 'none';
+
+        // Mostrar resultados
+        resultadosDiv.style.display = 'block';
+        resultadosDiv.innerHTML = `
+            <h4 style="color: ${resultados.exito ? '#10b981' : '#ef4444'}; margin-bottom: 16px;">
+                <i class="fas fa-${resultados.exito ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${resultados.exito ? 'Migración Completada' : 'Migración Completada con Errores'}
+            </h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+                    <h5 style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 8px;">USUARIOS</h5>
+                    <p style="color: #10b981; font-size: 24px; font-weight: 700; margin: 0;">${resultados.usuarios?.migrados || 0}</p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 4px 0 0 0;">migrados</p>
+                    ${resultados.usuarios?.errores > 0 ? `<p style="color: #ef4444; font-size: 12px; margin: 4px 0 0 0;">${resultados.usuarios.errores} errores</p>` : ''}
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+                    <h5 style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 8px;">DOCUMENTOS</h5>
+                    <p style="color: #10b981; font-size: 24px; font-weight: 700; margin: 0;">${resultados.documentos?.migrados || 0}</p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 4px 0 0 0;">migrados</p>
+                    ${resultados.documentos?.errores > 0 ? `<p style="color: #ef4444; font-size: 12px; margin: 4px 0 0 0;">${resultados.documentos.errores} errores</p>` : ''}
+                </div>
+            </div>
+
+            ${resultados.verificacion ? `
+                <div style="background: rgba(96, 165, 250, 0.1); border-left: 4px solid #60a5fa; padding: 16px; border-radius: 8px;">
+                    <h5 style="color: #60a5fa; margin-bottom: 12px;"><i class="fas fa-info-circle"></i> Verificación</h5>
+                    <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0;">
+                        Usuarios en Supabase: ${resultados.verificacion.usuarios.supabase}<br>
+                        Documentos en Supabase: ${resultados.verificacion.documentos.supabase}
+                    </p>
+                </div>
+            ` : ''}
+
+            <button class="btn-primary" onclick="location.reload()" style="margin-top: 20px;">
+                <i class="fas fa-sync"></i> Recargar Página
+            </button>
+        `;
+
+        // Mostrar toast
+        mostrarToast(resultados.exito ? 'Migración completada exitosamente' : 'Migración completada con algunos errores', resultados.exito ? 'success' : 'warning');
+
+    } catch (error) {
+        console.error('Error en migración:', error);
+        statusDiv.style.display = 'none';
+        resultadosDiv.style.display = 'block';
+        resultadosDiv.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px;">
+                <h5 style="color: #ef4444; margin-bottom: 8px;"><i class="fas fa-times-circle"></i> Error en Migración</h5>
+                <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0;">${error.message}</p>
+            </div>
+        `;
+        mostrarToast('Error al ejecutar la migración', 'error');
+    } finally {
+        btnEjecutar.disabled = false;
+    }
+}
+
+async function verificarMigracionUI() {
+    const resultadosDiv = document.getElementById('migracionResultados');
+
+    resultadosDiv.style.display = 'block';
+    resultadosDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--accent-color);"></i>
+            <p style="color: rgba(255,255,255,0.7); margin-top: 12px;">Verificando...</p>
+        </div>
+    `;
+
+    try {
+        const verificacion = await verificarMigracion();
+
+        if (!verificacion) {
+            throw new Error('No se pudo verificar el estado de la migración');
+        }
+
+        resultadosDiv.innerHTML = `
+            <h4 style="color: rgba(255,255,255,0.9); margin-bottom: 16px;">
+                <i class="fas fa-chart-bar"></i> Estado de los Datos
+            </h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+                    <h5 style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 12px;">USUARIOS</h5>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: rgba(255,255,255,0.6); font-size: 14px;">localStorage:</span>
+                        <span style="color: #60a5fa; font-weight: 600;">${verificacion.usuarios.localStorage}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: rgba(255,255,255,0.6); font-size: 14px;">Supabase:</span>
+                        <span style="color: #10b981; font-weight: 600;">${verificacion.usuarios.supabase}</span>
+                    </div>
+                    ${verificacion.usuarios.diferencia !== 0 ? `
+                        <p style="color: #f59e0b; font-size: 12px; margin-top: 8px;">
+                            <i class="fas fa-exclamation-triangle"></i> Diferencia: ${verificacion.usuarios.diferencia}
+                        </p>
+                    ` : ''}
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+                    <h5 style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 12px;">DOCUMENTOS</h5>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: rgba(255,255,255,0.6); font-size: 14px;">localStorage:</span>
+                        <span style="color: #60a5fa; font-weight: 600;">${verificacion.documentos.localStorage}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: rgba(255,255,255,0.6); font-size: 14px;">Supabase:</span>
+                        <span style="color: #10b981; font-weight: 600;">${verificacion.documentos.supabase}</span>
+                    </div>
+                    ${verificacion.documentos.diferencia !== 0 ? `
+                        <p style="color: #f59e0b; font-size: 12px; margin-top: 8px;">
+                            <i class="fas fa-exclamation-triangle"></i> Diferencia: ${verificacion.documentos.diferencia}
+                        </p>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error('Error al verificar migración:', error);
+        resultadosDiv.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px;">
+                <h5 style="color: #ef4444; margin-bottom: 8px;"><i class="fas fa-times-circle"></i> Error</h5>
+                <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0;">${error.message}</p>
+            </div>
+        `;
+    }
+}

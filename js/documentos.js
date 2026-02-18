@@ -27,7 +27,20 @@ async function obtenerDocumentos(filtros = {}) {
 
         if (error) throw error;
 
-        return data || [];
+        // Normalizar campos snake_case a camelCase
+        const documentos = (data || []).map(doc => ({
+            ...doc,
+            numeroControl: doc.numero_control || doc.numeroControl,
+            tipoDocumento: doc.tipo_documento || doc.tipoDocumento,
+            nombreArchivo: doc.nombre_archivo || doc.nombreArchivo,
+            urlArchivo: doc.url_archivo || doc.urlArchivo,
+            rutaArchivo: doc.ruta_archivo || doc.rutaArchivo,
+            fechaCarga: doc.fecha_carga || doc.fechaCarga,
+            fechaRevision: doc.fecha_revision || doc.fechaRevision,
+            revisadoPor: doc.revisado_por || doc.revisadoPor
+        }));
+
+        return documentos;
     } catch (error) {
         console.error('Error al obtener documentos:', error);
         return [];
@@ -110,7 +123,20 @@ async function obtenerDocumentoPorId(id) {
 
         if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no encontrado
 
-        if (data) return data;
+        if (data) {
+            // Normalizar campos
+            return {
+                ...data,
+                numeroControl: data.numero_control || data.numeroControl,
+                tipoDocumento: data.tipo_documento || data.tipoDocumento,
+                nombreArchivo: data.nombre_archivo || data.nombreArchivo,
+                urlArchivo: data.url_archivo || data.urlArchivo,
+                rutaArchivo: data.ruta_archivo || data.rutaArchivo,
+                fechaCarga: data.fecha_carga || data.fechaCarga,
+                fechaRevision: data.fecha_revision || data.fechaRevision,
+                revisadoPor: data.revisado_por || data.revisadoPor
+            };
+        }
 
         // 2. Fallback a LocalStorage (legacy)
         const documentosLocales = JSON.parse(localStorage.getItem('documentos')) || [];
@@ -185,7 +211,9 @@ async function subirDocumento(archivo, tipoDocumento, numeroControl) {
         const datosDoc = {
             numero_control: numeroControl,
             tipo_documento: tipoDocumento,
-            url: resultadoArchivo.url,
+            nombre_archivo: archivo.name,
+            url_archivo: resultadoArchivo.url,
+            ruta_archivo: rutaArchivo,
             estado: 'pendiente',
             observaciones: '',
             revisado_por: null
@@ -196,12 +224,11 @@ async function subirDocumento(archivo, tipoDocumento, numeroControl) {
             resultado = await actualizarDocumento(existente.id, datosDoc);
             resultado.id = existente.id;
             // Intentar eliminar el archivo anterior del storage
-            if (existente.url) {
-                // Extraer la ruta del archivo desde la URL
+            if (existente.url_archivo || existente.ruta_archivo) {
+                // Usar ruta_archivo directo o extraer de url_archivo
                 try {
-                    const urlPartes = existente.url.split('/documentos/');
-                    if (urlPartes.length > 1) {
-                        const rutaAnterior = urlPartes[1].split('?')[0];
+                    const rutaAnterior = existente.ruta_archivo || existente.url_archivo.split('/documentos/')[1].split('?')[0];
+                    if (rutaAnterior) {
                         await eliminarArchivoSupabase(rutaAnterior);
                     }
                 } catch (e) {
@@ -291,8 +318,30 @@ async function descargarDocumento(documentoId) {
     if (!doc) return mostrarToast('Documento no encontrado', 'error');
 
     try {
+        let urlDescarga = doc.url_archivo || doc.url || doc.contenido;
+        
+        // Si es una URL pública de Supabase Storage (legacy), extraer la ruta
+        if (urlDescarga && urlDescarga.includes('/storage/v1/object/public/documentos/')) {
+            const match = urlDescarga.match(/\/documentos\/(.+?)(?:\?|$)/);
+            if (match && match[1]) {
+                urlDescarga = match[1];
+            }
+        }
+        
+        // Si es una ruta (no URL completa de datos/blob), generar URL firmada
+        if (urlDescarga && !urlDescarga.startsWith('data:') && !urlDescarga.startsWith('blob:')) {
+            if (!urlDescarga.startsWith('http') || urlDescarga.includes('/storage/v1/object/')) {
+                const resultado = await obtenerURLDescargaSupabase(urlDescarga);
+                if (resultado.exito) {
+                    urlDescarga = resultado.url;
+                } else {
+                    throw new Error('No se pudo generar URL de descarga');
+                }
+            }
+        }
+        
         const link = document.createElement('a');
-        link.href = doc.url || doc.contenido;
+        link.href = urlDescarga;
         link.download = doc.tipo_documento.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
         link.click();
         await registrarBitacora('documento', `Descarga de ${doc.tipo_documento}`);
@@ -313,11 +362,10 @@ async function eliminarDocumentoCompleto(documentoId) {
     confirmar('Eliminar Documento', '¿Estás seguro?', async () => {
         try {
             // Intentar eliminar el archivo del storage
-            if (doc.url) {
+            if (doc.url_archivo || doc.ruta_archivo) {
                 try {
-                    const urlPartes = doc.url.split('/documentos/');
-                    if (urlPartes.length > 1) {
-                        const ruta = urlPartes[1].split('?')[0];
+                    const ruta = doc.ruta_archivo || doc.url_archivo.split('/documentos/')[1].split('?')[0];
+                    if (ruta) {
                         await eliminarArchivoSupabase(ruta);
                     }
                 } catch (e) {
