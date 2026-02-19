@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -22,6 +22,10 @@
     <!-- Barra de navegación -->
     <nav class="navbar navbar-glass">
         <div class="navbar-content">
+            <!-- Botón hamburguesa (visible solo en móvil) -->
+            <button class="btn-hamburger" id="btnHamburger" aria-label="Abrir menú">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="navbar-brand">
                 <img src="img/logo-tec.png" alt="Logo TecNM"
                     style="width: 28px; height: 28px; object-fit: contain; margin-right: 4px;">
@@ -40,41 +44,85 @@
         </div>
     </nav>
 
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar -->
     <div class="layout-container">
-        <aside class="sidebar sidebar-glass">
+        <aside class="sidebar sidebar-glass" id="sidebar">
+            <div class="sidebar-header">
+                <button class="sidebar-toggle" id="btnSidebarToggle" aria-label="Toggle Sidebar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
             <ul class="sidebar-menu">
-                <li class="menu-item active" data-section="dashboard">
+
+                <!-- Ítem simple: Dashboard -->
+                <li class="menu-item active" data-section="dashboard" data-tooltip="Dashboard">
                     <i class="fas fa-chart-line"></i>
                     <span>Dashboard</span>
                 </li>
-                <li class="menu-item" data-section="alumnos">
-                    <i class="fas fa-users"></i>
-                    <span>Gestión de Alumnos</span>
+
+                <!-- Grupo: Gestión -->
+                <li class="nav-group" data-tooltip="Gestión">
+                    <button class="nav-group__trigger" aria-expanded="false">
+                        <i class="fas fa-folder-open"></i>
+                        <span class="nav-group__label">Gestión</span>
+                        <i class="fas fa-chevron-down nav-group__chevron"></i>
+                    </button>
+                    <div class="nav-group__body">
+                        <ul class="nav-group__list">
+                            <li class="menu-item menu-item--child" data-section="alumnos">
+                                <i class="fas fa-users"></i>
+                                <span>Alumnos</span>
+                            </li>
+                            <li class="menu-item menu-item--child" data-section="documentos">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Documentos</span>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
-                <li class="menu-item" data-section="documentos">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Revisión de Documentos</span>
+
+                <!-- Grupo: Comunicación -->
+                <li class="nav-group" data-tooltip="Comunicación">
+                    <button class="nav-group__trigger" aria-expanded="false">
+                        <i class="fas fa-comments"></i>
+                        <span class="nav-group__label">Comunicación</span>
+                        <i class="fas fa-chevron-down nav-group__chevron"></i>
+                    </button>
+                    <div class="nav-group__body">
+                        <ul class="nav-group__list">
+                            <li class="menu-item menu-item--child" data-section="citas">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Citas</span>
+                            </li>
+                            <li class="menu-item menu-item--child" data-section="mensajes">
+                                <i class="fas fa-envelope"></i>
+                                <span>Mensajes</span>
+                                <span class="badge" id="mensajesBadge">0</span>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
-                <li class="menu-item" data-section="citas">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Gestión de Citas</span>
-                </li>
-                <li class="menu-item" data-section="mensajes">
-                    <i class="fas fa-envelope"></i>
-                    <span>Mensajes</span>
-                    <span class="badge" id="mensajesBadge">0</span>
-                </li>
-                <li class="menu-item" data-section="reportes">
+
+                <!-- Ítem simple: Reportes -->
+                <li class="menu-item" data-section="reportes" data-tooltip="Reportes">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reportes</span>
                 </li>
-                <li class="menu-item" data-section="configuracion">
+
+                <!-- Ítem simple: Configuración -->
+                <li class="menu-item" data-section="configuracion" data-tooltip="Configuración">
                     <i class="fas fa-cog"></i>
                     <span>Configuración</span>
                 </li>
+
             </ul>
         </aside>
+
 
         <!-- Contenido principal -->
         <main class="main-content">
@@ -494,6 +542,371 @@
 
     <!-- Panel administrativo -->
     <script src="js/admin.js"></script>
+
+    <!-- === SIDEBAR: Colapsar (escritorio) + Hamburguesa (móvil/tablet) === -->
+    <script>
+    (function () {
+        'use strict';
+
+        var DESKTOP_BREAKPOINT = 1025; // px — por encima de esto = escritorio
+
+        var btnHamburger    = document.getElementById('btnHamburger');
+        var btnCollapse     = document.getElementById('btnSidebarToggle');
+        var sidebar         = document.getElementById('sidebar');
+        var overlay         = document.getElementById('sidebarOverlay');
+        var layoutContainer = document.querySelector('.layout-container');
+
+        if (!sidebar) return;
+
+        /* ─── HELPERS ─────────────────────────────────────────────────── */
+        function isDesktop() { return window.innerWidth >= DESKTOP_BREAKPOINT; }
+
+        /* ─── DRAWER (móvil / tablet) ────────────────────────────────── */
+        function openDrawer() {
+            sidebar.classList.add('sidebar-open');
+            if (overlay) overlay.classList.add('active');
+            if (btnHamburger) {
+                btnHamburger.innerHTML = '<i class="fas fa-times"></i>';
+                btnHamburger.setAttribute('aria-label', 'Cerrar menú');
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+            sidebar.classList.remove('sidebar-open');
+            if (overlay) overlay.classList.remove('active');
+            if (btnHamburger) {
+                btnHamburger.innerHTML = '<i class="fas fa-bars"></i>';
+                btnHamburger.setAttribute('aria-label', 'Abrir menú');
+            }
+            document.body.style.overflow = '';
+        }
+
+        /* ─── COLLAPSE (escritorio) ──────────────────────────────────── */
+        var STORAGE_KEY = 'adminSidebarCollapsed';
+
+        function collapseSidebar() {
+            sidebar.classList.add('sidebar-collapsed');
+            if (layoutContainer) layoutContainer.classList.add('layout-collapsed');
+            try { localStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
+        }
+
+        function expandSidebar() {
+            sidebar.classList.remove('sidebar-collapsed');
+            if (layoutContainer) layoutContainer.classList.remove('layout-collapsed');
+            try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+        }
+
+        function toggleCollapse() {
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                expandSidebar();
+            } else {
+                collapseSidebar();
+            }
+        }
+
+        // Restaurar estado colapsado guardado
+        try {
+            if (localStorage.getItem(STORAGE_KEY) === '1' && isDesktop()) {
+                collapseSidebar();
+            }
+        } catch(e) {}
+
+        /* ─── EVENTOS ────────────────────────────────────────────────── */
+        // Hamburguesa
+        if (btnHamburger) {
+            btnHamburger.addEventListener('click', function () {
+                if (sidebar.classList.contains('sidebar-open')) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            });
+        }
+
+        // Botón toggle (desktop: colapsar / móvil: cerrar)
+        if (btnCollapse) {
+            btnCollapse.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (isDesktop()) {
+                    toggleCollapse();
+                } else {
+                    closeDrawer();
+                }
+            });
+        }
+
+        /* ─── ACORDEÓN SIDEBAR ───────────────────────────────────────── */
+        var accordionTriggers = document.querySelectorAll('.nav-group__trigger');
+
+        accordionTriggers.forEach(function (trigger) {
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var parent = this.closest('.nav-group');
+                var isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+                // Cerrar otros grupos (Lógica de Acordeón)
+                accordionTriggers.forEach(function (otherTrigger) {
+                    if (otherTrigger !== trigger) {
+                        otherTrigger.setAttribute('aria-expanded', 'false');
+                        otherTrigger.closest('.nav-group').classList.remove('is-expanded');
+                    }
+                });
+
+                // Toggle actual
+                if (!isExpanded) {
+                    this.setAttribute('aria-expanded', 'true');
+                    parent.classList.add('is-expanded');
+                } else {
+                    this.setAttribute('aria-expanded', 'false');
+                    parent.classList.remove('is-expanded');
+                }
+            });
+        });
+
+        // Overlay cierra el drawer
+        if (overlay) {
+            overlay.addEventListener('click', closeDrawer);
+        }
+
+        // Cerrar drawer al navegar (tablet/móvil)
+        sidebar.querySelectorAll('.menu-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                if (!isDesktop()) closeDrawer();
+            });
+        });
+
+        // Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                if (!isDesktop()) closeDrawer();
+            }
+        });
+
+        // Resize: limpiar drawer al pasar a desktop
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                if (isDesktop()) {
+                    closeDrawer();
+                } else {
+                    // En móvil/tablet, quitar colapso si estaba
+                    sidebar.classList.remove('sidebar-collapsed');
+                    if (layoutContainer) layoutContainer.classList.remove('layout-collapsed');
+                }
+            }, 100);
+        });
+    })();
+    </script>
+
 </body>
+
+    <!-- === CUSTOM SELECT — PORTAL A BODY (no se recorta por overflow) === -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Un solo dropdown activo en pantalla a la vez ── */
+        var activeClose = null;
+
+        function closeActive() {
+            if (activeClose) { activeClose(); activeClose = null; }
+        }
+
+        /* ── Recalcula posición del portal cuando scroll/resize ── */
+        function reposition(display, portal) {
+            var rect = display.getBoundingClientRect();
+            var spaceBelow = window.innerHeight - rect.bottom;
+            var spaceAbove = rect.top;
+            var ph = Math.min(290, portal.scrollHeight);
+
+            if (spaceBelow >= ph || spaceBelow >= spaceAbove) {
+                // Abrir hacia abajo
+                portal.style.top  = (rect.bottom + 2) + 'px';
+                portal.classList.remove('opens-up');
+            } else {
+                // Abrir hacia arriba
+                portal.style.top  = (rect.top - ph - 2) + 'px';
+                portal.classList.add('opens-up');
+            }
+            portal.style.left  = rect.left + 'px';
+            portal.style.width = rect.width + 'px';
+        }
+
+        function initCustomSelect(nativeSelect) {
+            if (nativeSelect.dataset.customSelectInit) return;
+            nativeSelect.dataset.customSelectInit = 'true';
+
+            /* 1. Wrapper + display */
+            var wrapper = document.createElement('div');
+            wrapper.className = 'custom-select-wrapper';
+
+            var display = document.createElement('div');
+            display.className = 'custom-select-display';
+            display.setAttribute('role', 'combobox');
+            display.setAttribute('tabindex', '0');
+            display.setAttribute('aria-haspopup', 'listbox');
+            display.setAttribute('aria-expanded', 'false');
+
+            var textSpan = document.createElement('span');
+            textSpan.className = 'cs-text';
+
+            var arrowSpan = document.createElement('span');
+            arrowSpan.className = 'cs-arrow';
+            arrowSpan.innerHTML = '<i class="fas fa-chevron-down"></i>';
+
+            display.appendChild(textSpan);
+            display.appendChild(arrowSpan);
+
+            nativeSelect.parentNode.insertBefore(wrapper, nativeSelect);
+            wrapper.appendChild(display);
+            wrapper.appendChild(nativeSelect);
+
+            /* 2. Sincronizar texto visible */
+            function syncDisplay() {
+                var sel = nativeSelect.options[nativeSelect.selectedIndex];
+                textSpan.textContent = sel ? sel.text : '';
+            }
+            syncDisplay();
+
+            /* 3. Portal de opciones */
+            var portal = null;
+            var _reposBound = null;
+
+            function buildPortal() {
+                if (portal) portal.remove();
+                portal = document.createElement('div');
+                portal.className = 'custom-select-options';
+                portal.setAttribute('role', 'listbox');
+                /* Estilos de posicionamiento fijo */
+                portal.style.cssText = 'position:fixed;z-index:99999;';
+
+                Array.from(nativeSelect.options).forEach(function (opt) {
+                    var isSelected = (opt.value === nativeSelect.value);
+
+                    var item = document.createElement('div');
+                    item.className = 'custom-select-option' + (isSelected ? ' selected' : '');
+                    item.dataset.value = opt.value;
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+
+                    /* Barra de acento */
+                    var bar = document.createElement('span');
+                    bar.className = 'cs-bar';
+
+                    /* Etiqueta */
+                    var label = document.createElement('span');
+                    label.className = 'cs-opt-label';
+                    label.textContent = opt.text;
+
+                    /* Check de selección */
+                    var check = document.createElement('span');
+                    check.className = 'cs-opt-check';
+                    check.innerHTML = '<i class="fas fa-check"></i>';
+
+                    item.appendChild(bar);
+                    item.appendChild(label);
+                    item.appendChild(check);
+
+                    item.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        nativeSelect.value = opt.value;
+                        nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        syncDisplay();
+                        close();
+                    });
+
+                    portal.appendChild(item);
+                });
+
+                document.body.appendChild(portal);
+                reposition(display, portal);
+            }
+
+            function open() {
+                closeActive();               // cerrar cualquier otro dropdown
+                buildPortal();
+                display.classList.add('open');
+                display.setAttribute('aria-expanded', 'true');
+
+                _reposBound = function () { reposition(display, portal); };
+                window.addEventListener('scroll', _reposBound, true);
+                window.addEventListener('resize', _reposBound);
+
+                activeClose = close;
+            }
+
+            function close() {
+                display.classList.remove('open');
+                display.setAttribute('aria-expanded', 'false');
+                if (portal) { portal.remove(); portal = null; }
+                if (_reposBound) {
+                    window.removeEventListener('scroll', _reposBound, true);
+                    window.removeEventListener('resize', _reposBound);
+                    _reposBound = null;
+                }
+                if (activeClose === close) activeClose = null;
+            }
+
+            function toggle() {
+                display.classList.contains('open') ? close() : open();
+            }
+
+            /* 4. Eventos */
+            display.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggle();
+            });
+
+            display.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                if (e.key === 'Escape') close();
+            });
+
+            document.addEventListener('mousedown', function (e) {
+                if (!wrapper.contains(e.target) && (!portal || !portal.contains(e.target))) {
+                    close();
+                }
+            });
+
+            /* 5. MutationObserver para cuando JS rellena <option> dinámicamente */
+            var observer = new MutationObserver(function () {
+                syncDisplay();
+                if (display.classList.contains('open')) open(); // reconstruir
+            });
+            observer.observe(nativeSelect, { childList: true, attributes: true, subtree: true });
+
+            nativeSelect.addEventListener('change', syncDisplay);
+        }
+
+        /* 6. Inicializar todos los selects en filter-bar y filtro-group */
+        function initAll() {
+            document.querySelectorAll(
+                '.filter-bar select, .filtro-group select'
+            ).forEach(initCustomSelect);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+        } else {
+            initAll();
+        }
+
+        /* Re-inicializar cuando admin.js añade dinámicamente nuevos selects */
+        var bodyObs = new MutationObserver(function () {
+            document.querySelectorAll(
+                '.filter-bar select:not([data-custom-select-init]),' +
+                '.filtro-group select:not([data-custom-select-init])'
+            ).forEach(initCustomSelect);
+        });
+        bodyObs.observe(document.body, { childList: true, subtree: true });
+    })();
+    </script>
+
+</body>
+
 
 </html>
